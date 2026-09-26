@@ -1,0 +1,278 @@
+{
+  "accuracy": {
+    "FMJL": {
+      "Sentences (text exact)": [
+        75,
+        75
+      ],
+      "Headings (text and level)": [
+        7,
+        7
+      ],
+      "Formulas (LaTeX exact)": [
+        2,
+        2
+      ],
+      "Table cells": [
+        24,
+        24
+      ],
+      "Image file and description": [
+        2,
+        2
+      ],
+      "Caption text": [
+        1,
+        1
+      ],
+      "Title and author": [
+        2,
+        2
+      ],
+      "Element types, in order": [
+        23,
+        23
+      ],
+      "Caption linked to image": [
+        1,
+        1
+      ],
+      "Section path of each element": [
+        23,
+        23
+      ],
+      "Page numbers": [
+        23,
+        23
+      ]
+    },
+    "Markdown": {
+      "Sentences (text exact)": [
+        75,
+        75
+      ],
+      "Headings (text and level)": [
+        7,
+        7
+      ],
+      "Formulas (LaTeX exact)": [
+        2,
+        2
+      ],
+      "Table cells": [
+        24,
+        24
+      ],
+      "Image file and description": [
+        2,
+        2
+      ],
+      "Caption text": [
+        1,
+        1
+      ],
+      "Title and author": [
+        2,
+        2
+      ],
+      "Element types, in order": [
+        22,
+        23
+      ],
+      "Caption linked to image": [
+        0,
+        1
+      ],
+      "Section path of each element": [
+        23,
+        23
+      ],
+      "Page numbers": [
+        0,
+        23
+      ]
+    },
+    "JSON": {
+      "Sentences (text exact)": [
+        75,
+        75
+      ],
+      "Headings (text and level)": [
+        7,
+        7
+      ],
+      "Formulas (LaTeX exact)": [
+        2,
+        2
+      ],
+      "Table cells": [
+        24,
+        24
+      ],
+      "Image file and description": [
+        2,
+        2
+      ],
+      "Caption text": [
+        1,
+        1
+      ],
+      "Title and author": [
+        2,
+        2
+      ],
+      "Element types, in order": [
+        23,
+        23
+      ],
+      "Caption linked to image": [
+        1,
+        1
+      ],
+      "Section path of each element": [
+        23,
+        23
+      ],
+      "Page numbers": [
+        23,
+        23
+      ]
+    },
+    "LaTeX": {
+      "Sentences (text exact)": [
+        75,
+        75
+      ],
+      "Headings (text and level)": [
+        7,
+        7
+      ],
+      "Formulas (LaTeX exact)": [
+        2,
+        2
+      ],
+      "Table cells": [
+        24,
+        24
+      ],
+      "Image file and description": [
+        1,
+        2
+      ],
+      "Caption text": [
+        1,
+        1
+      ],
+      "Title and author": [
+        2,
+        2
+      ],
+      "Element types, in order": [
+        23,
+        23
+      ],
+      "Caption linked to image": [
+        1,
+        1
+      ],
+      "Section path of each element": [
+        23,
+        23
+      ],
+      "Page numbers": [
+        0,
+        23
+      ]
+    }
+  },
+  "speed": {
+    "FMJL": {
+      "read 1 doc (ms)": 0.11394999819458462,
+      "read 100 docs (ms)": 18.87939999869559,
+      "write 100 docs (ms)": 68.45709999470273,
+      "find first table in 100 docs (ms)": 6.298800002696225
+    },
+    "Markdown": {
+      "read 1 doc (ms)": 3.8548000011360273,
+      "read 100 docs (ms)": 383.17259999894304,
+      "write 100 docs (ms)": 2.2880000033183023,
+      "find first table in 100 docs (ms)": 584.5685499989486
+    },
+    "JSON": {
+      "read 1 doc (ms)": 0.06969999958528206,
+      "read 100 docs (ms)": 11.12499999726424,
+      "write 100 docs (ms)": 7.01649999973597,
+      "find first table in 100 docs (ms)": 10.571500002697576
+    },
+    "LaTeX": {
+      "read 1 doc (ms)": 29.32275000057416,
+      "read 100 docs (ms)": 6130.602299999737,
+      "write 100 docs (ms)": 85.19930000329623,
+      "find first table in 100 docs (ms)": 0.010900002962443978
+    }
+  },
+  "efficiency": {
+    "FMJL": {
+      "file size (bytes)": 9118,
+      "gzip size (bytes)": 3424,
+      "tokens (whole file)": null,
+      "syntax overhead": 0.429,
+      "tokens to send the table to an LLM": null
+    },
+    "Markdown": {
+      "file size (bytes)": 5517,
+      "gzip size (bytes)": 2496,
+      "tokens (whole file)": null,
+      "syntax overhead": 0.056,
+      "tokens to send the table to an LLM": null
+    },
+    "JSON": {
+      "file size (bytes)": 7940,
+      "gzip size (bytes)": 2754,
+      "tokens (whole file)": null,
+      "syntax overhead": 0.345,
+      "tokens to send the table to an LLM": null
+    },
+    "LaTeX": {
+      "file size (bytes)": 5897,
+      "gzip size (bytes)": 2671,
+      "tokens (whole file)": null,
+      "syntax overhead": 0.117,
+      "tokens to send the table to an LLM": null
+    }
+  },
+  "stability": {
+    "FMJL": {
+      "same output when written twice": true,
+      "diff lines after the edit": 5,
+      "elements keeping their ID after the edit": "23/23",
+      "chunks to re-embed after the edit": "2 of 24 elements",
+      "elements recovered from a 90% cut file": "20/23",
+      "detects a silently changed letter": true
+    },
+    "Markdown": {
+      "same output when written twice": true,
+      "diff lines after the edit": 4,
+      "elements keeping their ID after the edit": "0/23",
+      "chunks to re-embed after the edit": "6 of 6 chunks",
+      "elements recovered from a 90% cut file": "19/23",
+      "detects a silently changed letter": false
+    },
+    "JSON": {
+      "same output when written twice": true,
+      "diff lines after the edit": 7,
+      "elements keeping their ID after the edit": "21/23",
+      "chunks to re-embed after the edit": "2 of 16 blocks (hashed by hand)",
+      "elements recovered from a 90% cut file": "0/23",
+      "detects a silently changed letter": false
+    },
+    "LaTeX": {
+      "same output when written twice": true,
+      "diff lines after the edit": 4,
+      "elements keeping their ID after the edit": "5/23",
+      "chunks to re-embed after the edit": "6 of 6 chunks",
+      "elements recovered from a 90% cut file": "20/23",
+      "detects a silently changed letter": false
+    }
+  }
+}

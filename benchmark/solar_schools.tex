@@ -1,0 +1,139 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{fontspec}  % compile with XeLaTeX (for the rupee sign)
+\title{Solar Power for Village Schools}
+\author{Format X Test Team}
+\begin{document}
+\maketitle
+
+\section*{1. Why Schools Need Solar Power}
+
+Many village schools lose electricity for several hours every day.
+Without power, fans stop, lights go out, and computers cannot be used.
+Teachers often move classes outside when the rooms become too dark.
+Students lose valuable learning time during these power cuts.
+Diesel generators can help, but fuel is expensive and noisy.
+Solar panels offer a cleaner and cheaper way to keep schools running.
+A small rooftop system can power lights, fans, and a few computers.
+This report studies one such system over five months.
+
+The school in this study has 240 students and 9 teachers.
+Before the project, the school had power for only 14 hours a day on average.
+The local R\&D team designed the system with help from two engineers.
+The project budget was ₹1,20,000, including panels, batteries, and wiring.
+A similar imported kit was quoted at about \$450 per panel.
+All readings were saved in a file called solar\_data\_2026.csv for later study.
+The results are summarised in the sections below.
+
+\section*{2. How Much Energy a Panel Makes}
+
+The energy a solar panel produces depends on four main things.
+The first is the area of the panel, measured in square metres.
+The second is the panel's efficiency, which is the share of sunlight it turns into electricity.
+The third is the number of peak sun hours in a day.
+The fourth is the performance ratio, which accounts for losses in wires, heat, and dust.
+Engineers combine these four values in a simple formula.
+The formula below gives the energy produced in one day.
+Each symbol is explained right after the formula.
+
+\begin{equation}
+E = A \times r \times H \times PR
+\label{eq:1}
+\end{equation}
+
+In this formula, E is the daily energy in kilowatt-hours.
+A is the total panel area, and r is the panel efficiency.
+H is the number of peak sun hours, and PR is the performance ratio.
+The school's panels cover 20 square metres with an efficiency of 18\%.
+The region gets about 5 peak sun hours on a typical day.
+With a performance ratio of 0.75, the system should make about 13.5 kWh per day.
+This is enough to run the school's lights, fans, and computer lab.
+
+\section*{3. Measured Results}
+
+The system was switched on in January and measured every day.
+A small meter recorded the energy produced each hour.
+Sunny days were counted using a simple light sensor.
+The table below shows the results for the first five months.
+Energy is given in kilowatt-hours, and savings are given in rupees.
+Savings were calculated at a rate of ₹8 per unit of electricity.
+January and March gave the best results because of clear skies.
+May was lower because of early rain and more cloudy days.
+
+\begin{table}[h]
+\centering
+\label{tab:results}
+\begin{tabular}{lrrr}
+Month & Sunny days & Energy (kWh) & Savings (₹) \\
+\hline
+January & 24 & 405 & 3,240 \\
+February & 23 & 372 & 2,976 \\
+March & 26 & 418 & 3,344 \\
+April & 22 & 381 & 3,048 \\
+May & 18 & 330 & 2,640 \\
+\end{tabular}
+\end{table}
+
+In total, the system produced 1,906 kWh in five months.
+This saved the school ₹15,248 on its electricity bill.
+The best single day produced 15.2 kWh, which is more than the formula predicted.
+The worst day produced only 3.1 kWh during a heavy storm.
+On average, the system made 12.6 kWh per day.
+This is about 93\% of the value predicted by the formula.
+The small gap is mostly explained by dust on the panels.
+
+\section*{4. The Installation}
+
+The panels were mounted on the flat roof of the main building.
+They face south and are tilted at 25 degrees to catch the most sunlight.
+A battery bank in the store room keeps power available after sunset.
+The wiring runs through a safety switch and a small control box.
+Local workers finished the installation in four days.
+Two teachers were trained to read the meter and clean the panels.
+The photo below shows the finished system on the roof.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{images/solar_panels.png}
+\caption{Solar panels on the roof of the main school building}
+\label{fig:roof}
+\end{figure}
+
+The panels are placed in four rows with space for cleaning between them.
+The roof was checked by an engineer before the work began.
+No leaks or cracks were found during the first five months.
+Birds sometimes sit on the frames, so a simple net was added.
+The panels are cleaned with water every two weeks.
+Cleaning takes less than one hour for two people.
+
+\section*{5. Costs and Savings}
+
+The most important question for the school was when the system would pay for itself.
+This is called the payback period.
+It is found by dividing the total cost by the yearly savings.
+The yearly energy was estimated from the five-month results.
+The formula below shows the calculation.
+Here, C is the total cost, E\_year is the yearly energy, and p is the price of one unit.
+
+\begin{equation}
+T = \frac{C}{E_{year} \times p}
+\label{eq:2}
+\end{equation}
+
+The system is expected to make about 4,600 kWh in a full year.
+At ₹8 per unit, this saves about ₹36,800 every year.
+With a total cost of ₹1,20,000, the payback period is about 3.3 years.
+After that, the electricity is almost free for the rest of the panels' 25-year life.
+
+\section*{6. Conclusion}
+
+The solar system gave the school reliable power during school hours.
+Students no longer lose class time because of power cuts.
+The measured energy matched the formula within 7\%.
+The money saved can now be spent on books and science kits.
+Other schools can use the same formula to plan their own systems.
+The main lessons are to choose a strong roof and to keep the panels clean.
+With simple care, a small solar system can serve a school for many years.
+
+\end{document}

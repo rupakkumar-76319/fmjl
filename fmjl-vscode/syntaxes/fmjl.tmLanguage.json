@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "FMJL",
+  "scopeName": "source.fmjl",
+  "patterns": [
+    { "match": "\"(id|hash|type|subtype|label|level|parent|page|pages|bbox|characters|reference|continues|confidence|lang|access|html|latex|file|meta|md|version|doc|source|sha256|protection|signed|converter|structure|elements|created|title|authors|date|summary|last_id)\"(?=\\s*:)",
+      "name": "support.type.property-name.fmjl" },
+    { "match": "\"(document|heading|paragraph|list|table|formula|code|image|caption|footnote|form_field|annotation|redaction|noise|message|utterance|record|citation|quote|toc|group)\"(?!\\s*:)",
+      "name": "constant.language.elementtype.fmjl" },
+    { "match": "\\b(true|false|null)\\b", "name": "constant.language.fmjl" },
+    { "match": "-?\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b", "name": "constant.numeric.fmjl" },
+    { "begin": "\"", "end": "\"", "name": "string.quoted.double.fmjl",
+      "patterns": [{ "match": "\\\\([\"\\\\/bfnrt]|u[0-9a-fA-F]{4})", "name": "constant.character.escape.fmjl" }] },
+    { "match": "[{}\\[\\],:]", "name": "punctuation.separator.fmjl" }
+  ]
+}

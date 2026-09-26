@@ -1,0 +1,49 @@
+{
+  "name": "fmjl",
+  "displayName": "FMJL",
+  "description": "Syntax coloring and live error checking for FMJL (.fmjl) documents: JSON Lines container, Markdown text, LaTeX formulas, HTML tables - one element per line with id, hash, page and permissions.",
+  "version": "0.3.1",
+  "publisher": "formatx",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "fmjl",
+    "jsonl",
+    "rag",
+    "document"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "fmjl",
+        "aliases": [
+          "FMJL"
+        ],
+        "extensions": [
+          ".fmjl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "fmjl",
+        "scopeName": "source.fmjl",
+        "path": "./syntaxes/fmjl.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "fmjl.check",
+        "title": "FMJL: Check current file"
+      }
+    ]
+  }
+}

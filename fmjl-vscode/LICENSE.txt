@@ -1,0 +1,3 @@
+FMJL tools - draft version 0.3.
+The license for the Format X project has not been decided yet.
+Until then: personal, educational and evaluation use is permitted.

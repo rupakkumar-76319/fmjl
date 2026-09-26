@@ -1,0 +1,159 @@
+{
+  "title": {
+    "text": "Solar Power for Village Schools",
+    "page": 0
+  },
+  "author": "Format X Test Team",
+  "sections": [
+    {
+      "heading": "1. Why Schools Need Solar Power",
+      "page": 0,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Many village schools lose electricity for several hours every day.\nWithout power, fans stop, lights go out, and computers cannot be used.\nTeachers often move classes outside when the rooms become too dark.\nStudents lose valuable learning time during these power cuts.\nDiesel generators can help, but fuel is expensive and noisy.\nSolar panels offer a cleaner and cheaper way to keep schools running.\nA small rooftop system can power lights, fans, and a few computers.\nThis report studies one such system over five months.",
+          "page": 0
+        },
+        {
+          "type": "paragraph",
+          "text": "The school in this study has 240 students and 9 teachers.\nBefore the project, the school had power for only 14 hours a day on average.\nThe local R&D team designed the system with help from two engineers.\nThe project budget was ₹1,20,000, including panels, batteries, and wiring.\nA similar imported kit was quoted at about $450 per panel.\nAll readings were saved in a file called solar_data_2026.csv for later study.\nThe results are summarised in the sections below.",
+          "page": 0
+        }
+      ]
+    },
+    {
+      "heading": "2. How Much Energy a Panel Makes",
+      "page": 0,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The energy a solar panel produces depends on four main things.\nThe first is the area of the panel, measured in square metres.\nThe second is the panel's efficiency, which is the share of sunlight it turns into electricity.\nThe third is the number of peak sun hours in a day.\nThe fourth is the performance ratio, which accounts for losses in wires, heat, and dust.\nEngineers combine these four values in a simple formula.\nThe formula below gives the energy produced in one day.\nEach symbol is explained right after the formula.",
+          "page": 0
+        },
+        {
+          "type": "formula",
+          "latex": "E = A \\times r \\times H \\times PR",
+          "page": 0
+        },
+        {
+          "type": "paragraph",
+          "text": "In this formula, E is the daily energy in kilowatt-hours.\nA is the total panel area, and r is the panel efficiency.\nH is the number of peak sun hours, and PR is the performance ratio.\nThe school's panels cover 20 square metres with an efficiency of 18%.\nThe region gets about 5 peak sun hours on a typical day.\nWith a performance ratio of 0.75, the system should make about 13.5 kWh per day.\nThis is enough to run the school's lights, fans, and computer lab.",
+          "page": 0
+        }
+      ]
+    },
+    {
+      "heading": "3. Measured Results",
+      "page": 1,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The system was switched on in January and measured every day.\nA small meter recorded the energy produced each hour.\nSunny days were counted using a simple light sensor.\nThe table below shows the results for the first five months.\nEnergy is given in kilowatt-hours, and savings are given in rupees.\nSavings were calculated at a rate of ₹8 per unit of electricity.\nJanuary and March gave the best results because of clear skies.\nMay was lower because of early rain and more cloudy days.",
+          "page": 1
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Month",
+            "Sunny days",
+            "Energy (kWh)",
+            "Savings (₹)"
+          ],
+          "rows": [
+            [
+              "January",
+              "24",
+              "405",
+              "3,240"
+            ],
+            [
+              "February",
+              "23",
+              "372",
+              "2,976"
+            ],
+            [
+              "March",
+              "26",
+              "418",
+              "3,344"
+            ],
+            [
+              "April",
+              "22",
+              "381",
+              "3,048"
+            ],
+            [
+              "May",
+              "18",
+              "330",
+              "2,640"
+            ]
+          ],
+          "page": 1
+        },
+        {
+          "type": "paragraph",
+          "text": "In total, the system produced 1,906 kWh in five months.\nThis saved the school ₹15,248 on its electricity bill.\nThe best single day produced 15.2 kWh, which is more than the formula predicted.\nThe worst day produced only 3.1 kWh during a heavy storm.\nOn average, the system made 12.6 kWh per day.\nThis is about 93% of the value predicted by the formula.\nThe small gap is mostly explained by dust on the panels.",
+          "page": 1
+        }
+      ]
+    },
+    {
+      "heading": "4. The Installation",
+      "page": 1,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The panels were mounted on the flat roof of the main building.\nThey face south and are tilted at 25 degrees to catch the most sunlight.\nA battery bank in the store room keeps power available after sunset.\nThe wiring runs through a safety switch and a small control box.\nLocal workers finished the installation in four days.\nTwo teachers were trained to read the meter and clean the panels.\nThe photo below shows the finished system on the roof.",
+          "page": 1
+        },
+        {
+          "type": "figure",
+          "src": "images/solar_panels.png",
+          "alt": "Rows of solar panels on the flat roof of a school building",
+          "caption": "Figure 1: Solar panels on the roof of the main school building",
+          "page": 1
+        },
+        {
+          "type": "paragraph",
+          "text": "The panels are placed in four rows with space for cleaning between them.\nThe roof was checked by an engineer before the work began.\nNo leaks or cracks were found during the first five months.\nBirds sometimes sit on the frames, so a simple net was added.\nThe panels are cleaned with water every two weeks.\nCleaning takes less than one hour for two people.",
+          "page": 1
+        }
+      ]
+    },
+    {
+      "heading": "5. Costs and Savings",
+      "page": 2,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The most important question for the school was when the system would pay for itself.\nThis is called the payback period.\nIt is found by dividing the total cost by the yearly savings.\nThe yearly energy was estimated from the five-month results.\nThe formula below shows the calculation.\nHere, C is the total cost, E_year is the yearly energy, and p is the price of one unit.",
+          "page": 2
+        },
+        {
+          "type": "formula",
+          "latex": "T = \\frac{C}{E_{year} \\times p}",
+          "page": 2
+        },
+        {
+          "type": "paragraph",
+          "text": "The system is expected to make about 4,600 kWh in a full year.\nAt ₹8 per unit, this saves about ₹36,800 every year.\nWith a total cost of ₹1,20,000, the payback period is about 3.3 years.\nAfter that, the electricity is almost free for the rest of the panels' 25-year life.",
+          "page": 2
+        }
+      ]
+    },
+    {
+      "heading": "6. Conclusion",
+      "page": 2,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The solar system gave the school reliable power during school hours.\nStudents no longer lose class time because of power cuts.\nThe measured energy matched the formula within 7%.\nThe money saved can now be spent on books and science kits.\nOther schools can use the same formula to plan their own systems.\nThe main lessons are to choose a strong roof and to keep the panels clean.\nWith simple care, a small solar system can serve a school for many years.",
+          "page": 2
+        }
+      ]
+    }
+  ]
+}

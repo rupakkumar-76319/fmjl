@@ -1,0 +1,400 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Format X line, version 0.1",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/header"
+    },
+    {
+      "$ref": "#/$defs/element"
+    }
+  ],
+  "$defs": {
+    "header": {
+      "type": "object",
+      "required": [
+        "type",
+        "version",
+        "doc",
+        "source",
+        "sha256",
+        "protection",
+        "signed",
+        "converter",
+        "structure",
+        "elements",
+        "created",
+        "lang",
+        "access"
+      ],
+      "properties": {
+        "type": {
+          "const": "document"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "doc": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "protection": {
+          "enum": [
+            "none",
+            "password",
+            "certificate",
+            "drm"
+          ]
+        },
+        "signed": {
+          "type": "boolean"
+        },
+        "converter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "structure": {
+          "type": "boolean"
+        },
+        "elements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lang": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$"
+        },
+        "access": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "element": {
+      "type": "object",
+      "required": [
+        "id",
+        "hash",
+        "type",
+        "parent",
+        "characters",
+        "md"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+#e[1-9][0-9]*$"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$"
+        },
+        "type": {
+          "enum": [
+            "heading",
+            "paragraph",
+            "list",
+            "table",
+            "formula",
+            "code",
+            "image",
+            "caption",
+            "footnote",
+            "form_field",
+            "annotation",
+            "redaction",
+            "noise",
+            "message",
+            "utterance",
+            "record",
+            "citation",
+            "quote",
+            "toc"
+          ]
+        },
+        "subtype": {
+          "type": "string"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "parent": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9_-]+#e[1-9][0-9]*$"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pages": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "bbox": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "characters": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]+#e[1-9][0-9]*$"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9_-]+#e[1-9][0-9]*$"
+              }
+            }
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lang": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$"
+        },
+        "access": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "html": {
+          "type": "string"
+        },
+        "latex": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^images/[^/]+\\.(png|webp)$"
+        },
+        "md": {
+          "type": "string"
+        }
+      },
+      "dependentRequired": {
+        "bbox": [
+          "page"
+        ]
+      },
+      "not": {
+        "required": [
+          "page",
+          "pages"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "heading"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "level"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "formula"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "latex"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "file"
+            ],
+            "properties": {
+              "subtype": {
+                "enum": [
+                  "logo",
+                  "stamp",
+                  "signature",
+                  "chart",
+                  "diagram",
+                  "photo",
+                  "qr_code",
+                  "barcode"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "noise"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "subtype"
+            ],
+            "properties": {
+              "subtype": {
+                "enum": [
+                  "header",
+                  "footer",
+                  "watermark",
+                  "page_number"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "heading"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "html"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "table"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "latex"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "formula"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "file"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "subtype"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "image",
+                  "noise"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
