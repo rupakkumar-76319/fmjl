@@ -5,6 +5,14 @@
   "version": "0.3.1",
   "publisher": "formatx",
   "license": "SEE LICENSE IN LICENSE.txt",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rupakkumar-76319/fmjl.git"
+  },
+  "homepage": "https://github.com/rupakkumar-76319/fmjl#readme",
+  "bugs": {
+    "url": "https://github.com/rupakkumar-76319/fmjl/issues"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
