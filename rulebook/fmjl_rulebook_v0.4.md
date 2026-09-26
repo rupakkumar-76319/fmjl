@@ -2,6 +2,7 @@
 fmjl: "0.4"
 doc: fmjl_rulebook
 title: "FMJL Rulebook, Version 0.4"
+authors: Rupak Kumar
 summary: "The rules of FMJL: one document, two forms - .fmjl storage for machines and Markdown authoring for people."
 lang: en
 access: ["all"]
@@ -16,7 +17,7 @@ last_id: 114
 
 # FMJL Rulebook, Version 0.4
 
-Status: draft. The license is not decided yet.
+Status: draft. License: MIT, copyright Rupak Kumar.
 
 This rulebook is the authority for FMJL. The `fmjl.py` tool is the reference implementation: if the tool and this rulebook disagree, the tool has a bug.
 
@@ -927,11 +928,10 @@ It needs Python and two packages: `pip install markdown-it-py jsonschema`. Tools
 1. Version 0.1: first draft, with the extension `.jsonl`.
 2. Version 0.2: the extension `.fmjl` and the `fmjl.py` tool.
 3. Version 0.3: the authoring form; canonical Markdown; IDs that never change; labels; the `group` type; `continues`; `meta`; header fields `title`, `authors`, `date`, `summary`, and `last_id`; `elements` may be `null` while writing; JPG and SVG images; retrieval rules become recommendations; the rulebook becomes the authority over the tool.
-4. Version 0.4: the format is named FMJL, short for Format, Markdown, JSON Lines; the placeholder name "Format X" is retired. No rules changed, so 0.3 files stay valid.
+4. Version 0.4: the format is named FMJL, short for Format, Markdown, JSON Lines; the placeholder name "Format X" is retired; the license is MIT. No rules changed, so 0.3 files stay valid.
 
 Moving from 0.2 to 0.3: run `fmjl upgrade`. Some `md` texts change once into canonical form, so their hashes change and those elements are embedded again once.
 
 ## 18. Not Decided Yet
 
-1. The license.
-2. Version 1.0 will be released after the accuracy benchmark. From 1.0 on, every 1.x reader will read every 1.x file.
+1. Version 1.0 will be released after the accuracy benchmark. From 1.0 on, every 1.x reader will read every 1.x file.

@@ -84,8 +84,8 @@ git add .
 git commit -m "FMJL 0.4: rulebook, tool, extension, benchmark"
 ```
 
-- [ ] Create an empty repository on GitHub (no README, no license yet)
-- [ ] Push:
+- [x] Create an empty repository on GitHub (github.com/rupakkumar-76319/fmjl)
+- [x] Push:
 
 ```powershell
 git remote add origin https://github.com/<your-name>/<repo>.git
@@ -100,11 +100,11 @@ git push -u origin main
 - [x] Final name chosen: FMJL, short for Format, Markdown, JSON Lines (2026-09-26)
 - [x] Name applied everywhere: rulebook 0.4, tool, extension 0.3.1, README
 - [ ] Check the name is free on GitHub and PyPI (the VS Code Marketplace has no "fmjl" yet)
-- [ ] Choose a license (MIT is the simplest choice for a format and a tool)
-- [ ] Add a `LICENSE` file at the root
-- [ ] Replace `fmjl-vscode/LICENSE.txt` with the same license
-- [ ] Update rulebook section 18 to remove the license item; add a line to section 17
-- [ ] Regenerate: `python fmjl.py md rulebook\fmjl_rulebook_v0.4.fmjl`, edit, `python fmjl.py new rulebook\fmjl_rulebook_v0.4.md`
+- [x] License chosen: MIT, copyright Rupak Kumar
+- [x] Add a `LICENSE` file at the root
+- [x] Replace `fmjl-vscode/LICENSE.txt` with the same license
+- [x] Update rulebook section 18 to remove the license item; add a line to section 17
+- [x] Regenerate: `python fmjl.py md rulebook\fmjl_rulebook_v0.4.fmjl`, edit, `python fmjl.py new rulebook\fmjl_rulebook_v0.4.md`
 - [ ] Commit
 
 ---
@@ -112,10 +112,10 @@ git push -u origin main
 ## Stage 8: Publish the extension
 
 - [ ] Create a publisher at https://marketplace.visualstudio.com/manage
-- [ ] Make sure `"publisher"` in `fmjl-vscode/package.json` equals that publisher name
-- [ ] Add `"repository"` to `package.json` with the GitHub URL from stage 6
+- [ ] Make sure `"publisher"` in `fmjl-vscode/package.json` equals that publisher name (currently `rupakkumar`)
+- [x] Add `"repository"` to `package.json` with the GitHub URL from stage 6
 - [ ] Create a Personal Access Token at https://dev.azure.com with scope **Marketplace: Manage**
-- [ ] Bump `"version"` in `package.json` (for example `0.3.1`) and add a line to `CHANGELOG.md`
+- [x] Bump `"version"` in `package.json` to `0.4.0` and add a line to `CHANGELOG.md`
 - [ ] Publish:
 
 ```powershell

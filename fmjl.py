@@ -17,6 +17,8 @@ Commands:
 Needs Python 3.9+ and: pip install jsonschema
 The rulebook (fmjl_rulebook_v0.4.md) is the authority. If this tool and the
 rulebook disagree, this tool has a bug.
+
+Copyright (c) 2026 Rupak Kumar. MIT License, see LICENSE.
 """
 from __future__ import annotations
 

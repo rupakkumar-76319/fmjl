@@ -83,5 +83,11 @@ violations, and the command **FMJL: Check current file**.
 
 ## Status
 
-Draft. The license is not decided yet. The rulebook is the
-authority; if `fmjl.py` and the rulebook disagree, the tool has a bug.
+Draft, version 0.4. The rulebook is the authority; if `fmjl.py` and the rulebook
+disagree, the tool has a bug.
+
+## Author and license
+
+Created by Rupak Kumar. Released under the MIT License (see `LICENSE`): use it freely,
+keep the copyright line. Suggestions and bug reports go to
+https://github.com/rupakkumar-76319/fmjl/issues.
