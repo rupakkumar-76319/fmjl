@@ -66,7 +66,7 @@ python fmjl.py new rulebook\fmjl_rulebook_v0.4.md -o %TEMP%\test.fmjl
 
 ## Stage 6: Put the project under version control
 
-- [ ] Create `.gitignore` at the root with these lines:
+- [x] Create `.gitignore` at the root with these lines:
 
 ```text
 __pycache__/
@@ -75,7 +75,7 @@ node_modules/
 benchmark/_corrupt.fmjl
 ```
 
-- [ ] Run:
+- [x] Run:
 
 ```powershell
 cd G:\FMJL
