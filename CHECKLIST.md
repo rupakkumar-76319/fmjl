@@ -99,24 +99,24 @@ git push -u origin main
 
 - [x] Final name chosen: FMJL, short for Format, Markdown, JSON Lines (2026-09-26)
 - [x] Name applied everywhere: rulebook 0.4, tool, extension 0.3.1, README
-- [ ] Check the name is free on GitHub and PyPI (the VS Code Marketplace has no "fmjl" yet)
+- [x] Check the name is free on GitHub and PyPI (the VS Code Marketplace has no "fmjl" yet)
 - [x] License chosen: MIT, copyright Rupak Kumar
 - [x] Add a `LICENSE` file at the root
 - [x] Replace `fmjl-vscode/LICENSE.txt` with the same license
 - [x] Update rulebook section 18 to remove the license item; add a line to section 17
 - [x] Regenerate: `python fmjl.py md rulebook\fmjl_rulebook_v0.4.fmjl`, edit, `python fmjl.py new rulebook\fmjl_rulebook_v0.4.md`
-- [ ] Commit
+- [x] Commit
 
 ---
 
 ## Stage 8: Publish the extension
 
-- [ ] Create a publisher at https://marketplace.visualstudio.com/manage
-- [ ] Make sure `"publisher"` in `fmjl-vscode/package.json` equals that publisher name (currently `rupakkumar`)
+- [x] Create a publisher at https://marketplace.visualstudio.com/manage
+- [x] Make sure `"publisher"` in `fmjl-vscode/package.json` equals that publisher name (currently `rupakkumar`)
 - [x] Add `"repository"` to `package.json` with the GitHub URL from stage 6
-- [ ] Create a Personal Access Token at https://dev.azure.com with scope **Marketplace: Manage**
+- [x] Create a Personal Access Token at https://dev.azure.com with scope **Marketplace: Manage**
 - [x] Bump `"version"` in `package.json` to `0.4.0` and add a line to `CHANGELOG.md`
-- [ ] Publish:
+- [x] Publish:
 
 ```powershell
 cd G:\FMJL\fmjl-vscode
@@ -124,8 +124,8 @@ npx @vscode/vsce login <publisher>
 npx @vscode/vsce publish
 ```
 
-- [ ] After a few minutes, search "FMJL" in the VS Code Extensions view and install it from there
-- [ ] Commit the version bump
+- [x] After a few minutes, search "FMJL" in the VS Code Extensions view and install it from there
+- [x] Commit the version bump
 
 ---
 
@@ -158,5 +158,5 @@ npx @vscode/vsce publish
 
 ## Where you are today (2026-09-27)
 
-Stages 1 to 5 are complete. In stage 7 the name is decided (FMJL); the license is still open.
-Start at stage 6.
+Stages 1 to 8 are complete. The extension is public: marketplace.visualstudio.com/items?itemName=rupakkumar.fmjl
+Start at stage 9.
