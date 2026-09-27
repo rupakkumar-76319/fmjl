@@ -131,11 +131,11 @@ npx @vscode/vsce publish
 
 ## Stage 9: Use the format for real documents
 
-- [ ] Write a real document as Markdown (a policy, a report, class notes)
-- [ ] `python fmjl.py new mydoc.md`; fix any errors it prints
-- [ ] Open `mydoc.fmjl` in VS Code and confirm zero problems
-- [ ] Edit the document: `python fmjl.py md mydoc.fmjl`, change the text, `python fmjl.py new mydoc.md`
-- [ ] Confirm unchanged elements kept their ids and hashes (`git diff --word-diff mydoc.fmjl`)
+- [x] Write a real document as Markdown (a policy, a report, class notes)
+- [x] `python fmjl.py new mydoc.md`; fix any errors it prints
+- [x] Open `mydoc.fmjl` in VS Code and confirm zero problems
+- [x] Edit the document: `python fmjl.py md mydoc.fmjl`, change the text, `python fmjl.py new mydoc.md`
+- [x] Confirm unchanged elements kept their ids and hashes (`git diff --word-diff mydoc.fmjl`)
 - [ ] Try one document with a table that has merged cells (`<table>` with `rowspan`)
 - [ ] Try one document with a group (a figure with an image and a caption)
 - [ ] Write down anything the rulebook did not cover; these become the next rulebook changes
