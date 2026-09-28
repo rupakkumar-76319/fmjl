@@ -6,18 +6,32 @@ per line), Markdown for all readable text, LaTeX for formulas, and HTML for tabl
 merged cells.
 
 ## Features
+- **Convert without leaving VS Code.** Right-click any `.md` file and choose
+  **FMJL: Convert Markdown to .fmjl**; right-click any `.fmjl` file and choose
+  **FMJL: Convert .fmjl to Markdown**. Both are also in the Command Palette (Ctrl+Shift+P).
+  Element ids are kept across edits, so converting back and forth never renumbers anything.
 - Recognizes `.fmjl` files and colors field names, element types, strings and numbers.
 - Live error checking while you type, with red underlines and messages in the Problems panel:
   JSON mistakes, missing required fields, wrong types and subtypes, wrong `hash` and
-  `characters` values, duplicate ids and labels, broken `parent` / `reference` /
-  `continues` links, dead `[text](#label)` links, page and bbox rules, and header rules.
-- Command **FMJL: Check current file** (Ctrl+Shift+P) for a clear PASSED / FAILED answer.
+  `characters` values, non-canonical Markdown, missing image files, duplicate ids and
+  labels, broken `parent` / `reference` / `continues` links, dead `[text](#label)` links,
+  page and bbox rules, and header rules.
+- Command **FMJL: Check current file** for a clear PASSED / FAILED answer.
+
+## How to use it
+1. Write a normal Markdown file, for example `notes.md`. Put images in an `images/` folder
+   next to it.
+2. Right-click the file, **FMJL: Convert Markdown to .fmjl**. `notes.fmjl` opens with a
+   PASSED or FAILED message.
+3. To edit later, right-click `notes.fmjl`, **FMJL: Convert .fmjl to Markdown**, change the
+   text, and convert back. Unchanged elements keep their ids and hashes.
 
 ## Notes
-- The Python tool `fmjl.py check` remains the final judge. This extension catches the
-  same core errors live; the only rule it does not test is canonical-Markdown rewriting.
-- People usually write the authoring form (a normal Markdown file) and convert it with
-  `python fmjl.py new notes.md`; this extension is for reading and fixing the `.fmjl` file.
+- The converter is pure JavaScript and needs no Python. Its output is byte-identical to the
+  reference tool `fmjl.py`; the test in `test/roundtrip.js` checks that on every document
+  in the repository.
+- The rulebook is the authority. If this extension and the rulebook disagree, the
+  extension has a bug: https://github.com/rupakkumar-76319/fmjl/issues
 
 ## The format
 FMJL stores any document as elements (headings, paragraphs, lists, tables, formulas,

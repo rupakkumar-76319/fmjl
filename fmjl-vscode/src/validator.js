@@ -1,10 +1,9 @@
-// FMJL validator for the VS Code extension - rulebook version 0.3.
-// Pure JavaScript, no dependencies, so the extension works without Python.
-// The Python tool `fmjl.py check` remains the final judge; this catches the same
-// core errors live while typing (all except canonical-Markdown rewriting).
 
 "use strict";
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+const { canonicalMd } = require("./converter.js");
 
 const TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
   "footnote", "form_field", "annotation", "redaction", "noise", "message", "utterance",
@@ -27,17 +26,16 @@ function elementHash(type, md) {
 function isInt(v) { return Number.isInteger(v); }
 function isStr(v) { return typeof v === "string"; }
 
-// Returns [{line, message, start, end}] - line is 0-based for VS Code.
-function validate(text) {
+function validate(text, base) {
   const problems = [];
   const add = (line, message, start, end) =>
     problems.push({ line, message, start: start || 0, end: end == null ? 400 : end });
 
   const rawLines = text.split("\n");
-  const rows = []; // {line, obj}
+  const rows = [];
   rawLines.forEach((raw, i) => {
     const last = i === rawLines.length - 1;
-    if (raw === "" && last) return;               // final newline is fine
+    if (raw === "" && last) return;
     if (raw.trim() === "") { add(i, "empty line (not allowed; delete it)"); return; }
     try {
       const obj = JSON.parse(raw);
@@ -52,13 +50,12 @@ function validate(text) {
   });
   if (!rows.length) { add(0, "file has no valid lines"); return problems; }
 
-  const col = (row, field) => {           // underline the field name when possible
+  const col = (row, field) => {
     const k = row.raw.indexOf('"' + field + '"');
     return k >= 0 ? [k, k + field.length + 2] : [0, Math.min(row.raw.length, 400)];
   };
   const addF = (row, field, msg) => { const c = col(row, field); add(row.line, msg, c[0], c[1]); };
 
-  // ---- header ----
   const head = rows[0];
   const h = head.obj;
   if (head.line !== 0 || h.type !== "document") {
@@ -79,7 +76,6 @@ function validate(text) {
     addF(head, "access", "access must be a list of group names");
   if ("last_id" in h && !(isInt(h.last_id) && h.last_id >= 0)) addF(head, "last_id", "last_id must be a whole number");
 
-  // ---- elements ----
   const els = rows.slice(1);
   const byId = new Map(), lineOf = new Map(), pos = new Map(), labels = new Map();
   els.forEach((row, index) => {
@@ -144,6 +140,10 @@ function validate(text) {
         if (isStr(v) && [...v].some(c => c.charCodeAt(0) < 32 && c !== "\n" && c !== "\t"))
           addF(row, field, field + " has a hidden control character - write backslashes as \\\\ (e.g. \\\\frac)");
       }
+      if (TYPES.includes(e.type)) {
+        const canon = canonicalMd(e.type, e.md, isStr(e.latex) ? e.latex : undefined, isStr(e.html) ? e.html : undefined);
+        if (canon !== e.md) addF(row, "md", "md is not canonical Markdown (run: python fmjl.py fill)");
+      }
       if (isStr(e.hash) && e.hash !== elementHash(e.type, e.md))
         addF(row, "hash", "hash is wrong (run: python fmjl.py fill)");
       if (isInt(e.characters) && e.characters !== [...e.md].length && e.characters !== e.md.length)
@@ -154,9 +154,11 @@ function validate(text) {
       }
     }
     if (isStr(e.hash) && !/^[0-9a-f]{16}$/.test(e.hash)) addF(row, "hash", "hash must be 16 hex characters");
+    if (base && e.type === "image" && isStr(e.file) && /^images\/[^/]+\.(png|webp|jpg|jpeg|svg)$/.test(e.file)) {
+      if (!fs.existsSync(path.join(base, e.file))) addF(row, "file", "file " + e.file + " does not exist next to the .fmjl file");
+    }
   });
 
-  // ---- cross references ----
   els.forEach((row, index) => {
     const e = row.obj;
     if (e.type === "document") return;

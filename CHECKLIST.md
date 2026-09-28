@@ -136,14 +136,15 @@ npx @vscode/vsce publish
 - [x] Open `mydoc.fmjl` in VS Code and confirm zero problems
 - [x] Edit the document: `python fmjl.py md mydoc.fmjl`, change the text, `python fmjl.py new mydoc.md`
 - [x] Confirm unchanged elements kept their ids and hashes (`git diff --word-diff mydoc.fmjl`)
-- [ ] Try one document with a table that has merged cells (`<table>` with `rowspan`)
-- [ ] Try one document with a group (a figure with an image and a caption)
-- [ ] Write down anything the rulebook did not cover; these become the next rulebook changes
+- [x] Try one document with a table that has merged cells (`<table>` with `rowspan`)
+- [x] Try one document with a group (a figure with an image and a caption)
+- [x] Write down anything the rulebook did not cover; these become the next rulebook changes
 
 ---
 
 ## Stage 10: Release version 1.0
 
+- [x] The VS Code extension converts both ways without Python (converter.js, 0.5.0); `node fmjl-vscode	estoundtrip.js` proves it matches `fmjl.py`
 - [ ] Resolve every gap found in stage 9, in the rulebook first, then in `fmjl.py` and `validator.js`
 - [ ] Rulebook section 17 says what changed and how to upgrade
 - [ ] `fmjl.py upgrade` handles every version from 0.1 to 1.0
@@ -156,7 +157,7 @@ npx @vscode/vsce publish
 
 ---
 
-## Where you are today (2026-09-27)
+## Where you are today (2026-09-29)
 
-Stages 1 to 8 are complete. The extension is public: marketplace.visualstudio.com/items?itemName=rupakkumar.fmjl
-Start at stage 9.
+Stages 1 to 9 are complete. The extension is public: marketplace.visualstudio.com/items?itemName=rupakkumar.fmjl
+Stage 9 findings are in `NOTES.md`; they are the input for stage 10.

@@ -1,6 +1,9 @@
 "use strict";
+const fs = require("fs");
+const path = require("path");
 const vscode = require("vscode");
 const { validate } = require("./validator.js");
+const conv = require("./converter.js");
 
 let diagnostics;
 const timers = new Map();
@@ -17,9 +20,13 @@ function toDiagnostics(document, problems) {
   });
 }
 
+function baseOf(document) {
+  return document.uri.scheme === "file" ? path.dirname(document.uri.fsPath) : null;
+}
+
 function refresh(document) {
   if (document.languageId !== "fmjl") return;
-  const problems = validate(document.getText());
+  const problems = validate(document.getText(), baseOf(document));
   diagnostics.set(document.uri, toDiagnostics(document, problems));
   return problems;
 }
@@ -28,6 +35,66 @@ function refreshSoon(document) {
   const key = document.uri.toString();
   clearTimeout(timers.get(key));
   timers.set(key, setTimeout(() => refresh(document), 300));
+}
+
+async function fileFor(uri, ext) {
+  if (!uri) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showInformationMessage("Open a " + ext + " file first.");
+      return null;
+    }
+    if (editor.document.isDirty) await editor.document.save();
+    uri = editor.document.uri;
+  }
+  if (uri.scheme !== "file" || !uri.fsPath.toLowerCase().endsWith(ext)) {
+    vscode.window.showInformationMessage("FMJL: this command needs a " + ext + " file.");
+    return null;
+  }
+  return uri.fsPath;
+}
+
+function report(outFile, problems) {
+  const name = path.basename(outFile);
+  if (problems.length === 0) {
+    vscode.window.showInformationMessage("FMJL: wrote " + name + ", PASSED (0 errors)");
+  } else {
+    vscode.window.showWarningMessage("FMJL: wrote " + name + ", FAILED (" + problems.length + " errors) - see the Problems panel");
+    vscode.commands.executeCommand("workbench.actions.view.problems");
+  }
+}
+
+async function toFmjl(uri) {
+  const file = await fileFor(uri, ".md");
+  if (!file) return;
+  try {
+    const text = fs.readFileSync(file, "utf8");
+    const stem = path.basename(file, path.extname(file));
+    const dir = path.dirname(file);
+    const rows = conv.importMd(text, { doc: conv.docName(stem), source: path.basename(file), base: dir });
+    const out = path.join(dir, stem + ".fmjl");
+    fs.writeFileSync(out, conv.writeRows(rows), "utf8");
+    const document = await vscode.workspace.openTextDocument(out);
+    await vscode.window.showTextDocument(document, { preview: false });
+    report(out, refresh(document) || []);
+  } catch (e) {
+    vscode.window.showErrorMessage("FMJL: " + e.message);
+  }
+}
+
+async function toMd(uri) {
+  const file = await fileFor(uri, ".fmjl");
+  if (!file) return;
+  try {
+    const rows = conv.readRows(fs.readFileSync(file, "utf8"));
+    const out = path.join(path.dirname(file), path.basename(file, path.extname(file)) + ".md");
+    fs.writeFileSync(out, conv.exportMd(rows), "utf8");
+    const document = await vscode.workspace.openTextDocument(out);
+    await vscode.window.showTextDocument(document, { preview: false });
+    vscode.window.showInformationMessage("FMJL: wrote " + path.basename(out) + "; ids are kept, edit and convert back");
+  } catch (e) {
+    vscode.window.showErrorMessage("FMJL: " + e.message);
+  }
 }
 
 function activate(context) {
@@ -52,7 +119,9 @@ function activate(context) {
         vscode.window.showWarningMessage("FMJL: FAILED (" + problems.length + " errors) - see the Problems panel");
         vscode.commands.executeCommand("workbench.actions.view.problems");
       }
-    })
+    }),
+    vscode.commands.registerCommand("fmjl.toFmjl", toFmjl),
+    vscode.commands.registerCommand("fmjl.toMd", toMd)
   );
 }
 

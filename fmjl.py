@@ -5,6 +5,11 @@ One document, two forms:
   name.fmjl   storage form   one JSON object per line, for machines
   name.md     authoring form normal Markdown with small hidden notes, for people
 
+Short form (the file extension says the direction):
+  fmjl notes.md                      Markdown -> notes.fmjl
+  fmjl notes.fmjl                    .fmjl -> notes.md
+  fmjl notes.md other.fmjl           second name = output file
+
 Commands:
   python fmjl.py new notes.md        authoring form  -> storage form (notes.fmjl)
   python fmjl.py md notes.fmjl       storage form    -> authoring form (notes.md)
@@ -1501,6 +1506,27 @@ def _report(errors):
     return 0
 
 
+COMMANDS = ("new", "md", "fill", "check", "view", "info", "upgrade")
+
+
+def _short_form(argv):
+    """`fmjl notes.md` means `fmjl new notes.md`; `fmjl notes.fmjl` means `fmjl md notes.fmjl`.
+    A second file name is the output: `fmjl notes.md out.fmjl`."""
+    if not argv or argv[0] in COMMANDS or argv[0].startswith("-"):
+        return argv
+    first = argv[0].lower()
+    if first.endswith(".md"):
+        cmd = "new"
+    elif first.endswith(".fmjl") or first.endswith(".jsonl"):
+        cmd = "md"
+    else:
+        return argv
+    rest = argv[1:]
+    if rest and not rest[0].startswith("-"):
+        rest = ["-o", rest[0]] + rest[1:]
+    return [cmd, argv[0]] + rest
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="fmjl", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1518,6 +1544,7 @@ def main(argv=None):
             p.add_argument("-o", "--output", help="output file (default: same name, other extension)")
         if name == "new":
             p.add_argument("--doc", help="document name when the front matter has none")
+    argv = _short_form(sys.argv[1:] if argv is None else list(argv))
     a = ap.parse_args(argv)
     path = Path(a.file)
     try:

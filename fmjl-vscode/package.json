@@ -1,8 +1,8 @@
 {
   "name": "fmjl",
   "displayName": "FMJL",
-  "description": "Syntax coloring and live error checking for FMJL (.fmjl) documents: JSON Lines container, Markdown text, LaTeX formulas, HTML tables - one element per line with id, hash, page and permissions.",
-  "version": "0.4.0",
+  "description": "FMJL (.fmjl) documents: convert Markdown to FMJL and back, syntax coloring and live error checking. JSON Lines container, Markdown text, LaTeX formulas, HTML tables - one element per line with id, hash, page and permissions.",
+  "version": "0.5.0",
   "publisher": "rupakkumar",
   "author": {
     "name": "Rupak Kumar"
@@ -26,6 +26,7 @@
   "keywords": [
     "fmjl",
     "jsonl",
+    "markdown",
     "rag",
     "document"
   ],
@@ -54,7 +55,44 @@
       {
         "command": "fmjl.check",
         "title": "FMJL: Check current file"
+      },
+      {
+        "command": "fmjl.toFmjl",
+        "title": "FMJL: Convert Markdown to .fmjl"
+      },
+      {
+        "command": "fmjl.toMd",
+        "title": "FMJL: Convert .fmjl to Markdown"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "fmjl.toFmjl",
+          "when": "resourceExtname == .md",
+          "group": "fmjl@1"
+        },
+        {
+          "command": "fmjl.toMd",
+          "when": "resourceExtname == .fmjl",
+          "group": "fmjl@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "fmjl.toFmjl",
+          "when": "resourceExtname == .md",
+          "group": "fmjl@1"
+        },
+        {
+          "command": "fmjl.toMd",
+          "when": "resourceLangId == fmjl",
+          "group": "fmjl@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "test": "node test/roundtrip.js"
   }
 }

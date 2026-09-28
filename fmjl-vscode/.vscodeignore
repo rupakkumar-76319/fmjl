@@ -1,6 +1,4 @@
 .vscodeignore
-.git/**
-.gitignore
-**/*.vsix
-**/.DS_Store
-
+test/**
+*.vsix
+.gitattributes
