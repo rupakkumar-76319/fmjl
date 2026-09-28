@@ -142,22 +142,62 @@ npx @vscode/vsce publish
 
 ---
 
-## Stage 10: Release version 1.0
+## Stage 10: PDF importer
 
-- [x] The VS Code extension converts both ways without Python (converter.js, 0.5.0); `node fmjl-vscode	estoundtrip.js` proves it matches `fmjl.py`
-- [ ] Resolve every gap found in stage 9, in the rulebook first, then in `fmjl.py` and `validator.js`
-- [ ] Rulebook section 17 says what changed and how to upgrade
-- [ ] `fmjl.py upgrade` handles every version from 0.1 to 1.0
-- [ ] Benchmark re-run; results copied into `README.md`
+- [x] `fmjl_pdf.py` at the root: `fmjl report.pdf` writes `report.fmjl` and `report.md`, images into `images/`
+- [x] Headings from font size, paragraphs from columns, lists, tables (merged cells still plain Markdown, NOTES.md 6), images with captions
+- [x] Every element carries `page` and `bbox`; repeated headers, footers and page numbers become `noise`
+- [ ] Formulas kept as LaTeX where the PDF has them as text; otherwise as images (NOTES.md 7)
+- [ ] Scanned PDFs: OCR step with `confidence` filled in (path exists, needs Tesseract to test)
+- [ ] Tested on five real PDFs of different kinds (done: generated report, project report, scanned paper; still needed: slides, form); findings in `NOTES.md`
+
+---
+
+## Stage 11: Word importer
+
+- [ ] `fmjl_docx.py`: `fmjl report.docx` writes `report.fmjl` and `report.md`
+- [ ] Headings, lists, tables with merged cells, images, captions, footnotes taken from the document structure
+- [ ] Tested on three real Word files; findings added to `NOTES.md`
+
+---
+
+## Stage 12: Retriever output
+
+- [ ] `fmjl chunks report.fmjl`: one retriever-ready chunk per element or per heading section, with id, page, bbox, hash, access and the heading path as metadata
+- [ ] `import fmjl` works as a Python library: `fmjl.load(path)`, `fmjl.chunks(rows)`, `fmjl.check(path)`
+- [ ] One working example: a folder of PDFs to FMJL to a vector store to a question answered with page citations
+
+---
+
+## Stage 13: Rulebook 0.5
+
+- [ ] Every entry in `NOTES.md` resolved: in the rulebook first, then in `fmjl.py`, `converter.js` and `validator.js`
+- [ ] Rulebook section 17 says what changed and how to upgrade; `fmjl.py upgrade` handles 0.1 to 0.5
+- [ ] Rulebook regenerated with `fmjl new`; round trip still byte-identical; `npm test` passes
+
+---
+
+## Stage 14: Make it available to everyone
+
+- [ ] Python package on PyPI: `pip install fmjl` gives the `fmjl` command with the converter and both importers
+- [ ] `fmjl.exe` for Windows (PyInstaller) attached to the GitHub release, for people without Python
+- [ ] Extension published with the converter (0.5.0), then bumped with each rulebook change
+- [ ] README rewritten for a stranger: what FMJL is, install in one line, convert in one line, use in RAG in ten lines
+- [ ] GitHub: topics set, issue templates, a test workflow that runs `npm test` and the Python checks on every push
+- [ ] Benchmark re-run with the importers included; results in `README.md`
+
+---
+
+## Stage 15: Release version 1.0
+
 - [ ] Rulebook renamed to version 1.0; `.fmjl` regenerated with `new`
-- [ ] `fmjl.py` VERSION and CONVERTER set to `1.0`
-- [ ] Extension bumped to `1.0.0` and published (stage 8 steps)
-- [ ] Git tag: `git tag v1.0.0` and `git push --tags`
-- [ ] GitHub release created with the `.vsix` attached
+- [ ] `fmjl.py` VERSION and CONVERTER set to `1.0`; extension `1.0.0`; PyPI `1.0.0`
+- [ ] Git tag `v1.0.0`; GitHub release with the `.vsix`, the `.exe` and the rulebook attached
+- [ ] Announce: one post with the benchmark table and a link, so people find it
 
 ---
 
 ## Where you are today (2026-09-29)
 
-Stages 1 to 9 are complete. The extension is public: marketplace.visualstudio.com/items?itemName=rupakkumar.fmjl
-Stage 9 findings are in `NOTES.md`; they are the input for stage 10.
+Stages 1 to 9 are complete, and the extension converts both ways without Python (0.5.0, not yet published).
+Next is stage 10, the PDF importer. `NOTES.md` collects findings for stage 13.

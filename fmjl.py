@@ -9,6 +9,7 @@ Short form (the file extension says the direction):
   fmjl notes.md                      Markdown -> notes.fmjl
   fmjl notes.fmjl                    .fmjl -> notes.md
   fmjl notes.md other.fmjl           second name = output file
+  fmjl report.pdf                    PDF -> report.fmjl and report.md
 
 Commands:
   python fmjl.py new notes.md        authoring form  -> storage form (notes.fmjl)
@@ -18,6 +19,7 @@ Commands:
   python fmjl.py view notes.fmjl     print the document as clean Markdown
   python fmjl.py info notes.fmjl     print title, element counts and an outline
   python fmjl.py upgrade old.fmjl    turn a version 0.1 or 0.2 file into 0.3
+  python fmjl.py pdf report.pdf      PDF -> report.fmjl, report.md and images/ (needs fmjl_pdf.py)
 
 Needs Python 3.9+ and: pip install jsonschema
 The rulebook (fmjl_rulebook_v0.4.md) is the authority. If this tool and the
@@ -1506,7 +1508,7 @@ def _report(errors):
     return 0
 
 
-COMMANDS = ("new", "md", "fill", "check", "view", "info", "upgrade")
+COMMANDS = ("new", "md", "fill", "check", "view", "info", "upgrade", "pdf")
 
 
 def _short_form(argv):
@@ -1519,6 +1521,8 @@ def _short_form(argv):
         cmd = "new"
     elif first.endswith(".fmjl") or first.endswith(".jsonl"):
         cmd = "md"
+    elif first.endswith(".pdf"):
+        cmd = "pdf"
     else:
         return argv
     rest = argv[1:]
@@ -1537,16 +1541,25 @@ def main(argv=None):
                         ("check", "check every rule; print errors with line numbers"),
                         ("view", "print the document as clean Markdown"),
                         ("info", "print title, element counts and an outline"),
-                        ("upgrade", "turn a version 0.1, 0.2 or 0.3 file into version 0.4")]:
+                        ("upgrade", "turn a version 0.1, 0.2 or 0.3 file into version 0.4"),
+                        ("pdf", "PDF -> storage form, authoring form and images/")]:
         p = sub.add_parser(name, help=help_)
         p.add_argument("file")
-        if name in ("new", "md", "upgrade"):
+        if name in ("new", "md", "upgrade", "pdf"):
             p.add_argument("-o", "--output", help="output file (default: same name, other extension)")
-        if name == "new":
+        if name in ("new", "pdf"):
             p.add_argument("--doc", help="document name when the front matter has none")
     argv = _short_form(sys.argv[1:] if argv is None else list(argv))
     a = ap.parse_args(argv)
     path = Path(a.file)
+    if a.cmd == "pdf":
+        try:
+            import fmjl_pdf
+        except ImportError as e:
+            print(f"error: the PDF importer needs fmjl_pdf.py next to fmjl.py and: pip install pymupdf ({e})")
+            return 2
+        args = [str(path)] + (["-o", a.output] if a.output else []) + (["--doc", a.doc] if a.doc else [])
+        return fmjl_pdf.main(args)
     try:
         if a.cmd == "new":
             text = path.read_text(encoding="utf-8")

@@ -187,28 +187,28 @@
   },
   "speed": {
     "FMJL": {
-      "read 1 doc (ms)": 0.11394999819458462,
-      "read 100 docs (ms)": 18.87939999869559,
-      "write 100 docs (ms)": 68.45709999470273,
-      "find first table in 100 docs (ms)": 6.298800002696225
+      "read 1 doc (ms)": 0.11545000597834587,
+      "read 100 docs (ms)": 12.077100007445551,
+      "write 100 docs (ms)": 30.145299999276176,
+      "find first table in 100 docs (ms)": 2.177949994802475
     },
     "Markdown": {
-      "read 1 doc (ms)": 3.8548000011360273,
-      "read 100 docs (ms)": 383.17259999894304,
-      "write 100 docs (ms)": 2.2880000033183023,
-      "find first table in 100 docs (ms)": 584.5685499989486
+      "read 1 doc (ms)": 1.5149500031839125,
+      "read 100 docs (ms)": 179.52810000861064,
+      "write 100 docs (ms)": 0.7088000129442662,
+      "find first table in 100 docs (ms)": 525.4270499935956
     },
     "JSON": {
-      "read 1 doc (ms)": 0.06969999958528206,
-      "read 100 docs (ms)": 11.12499999726424,
-      "write 100 docs (ms)": 7.01649999973597,
-      "find first table in 100 docs (ms)": 10.571500002697576
+      "read 1 doc (ms)": 0.028950002160854638,
+      "read 100 docs (ms)": 3.1612000020686537,
+      "write 100 docs (ms)": 5.229699992923997,
+      "find first table in 100 docs (ms)": 6.42274999700021
     },
     "LaTeX": {
-      "read 1 doc (ms)": 29.32275000057416,
-      "read 100 docs (ms)": 6130.602299999737,
-      "write 100 docs (ms)": 85.19930000329623,
-      "find first table in 100 docs (ms)": 0.010900002962443978
+      "read 1 doc (ms)": 16.892949992325157,
+      "read 100 docs (ms)": 5364.658899998176,
+      "write 100 docs (ms)": 79.01429999037646,
+      "find first table in 100 docs (ms)": 0.010200004908256233
     }
   },
   "efficiency": {

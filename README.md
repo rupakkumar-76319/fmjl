@@ -56,6 +56,7 @@ One document has two forms that hold the same information:
 <!-- e9 -->
 ```text
 fmjl.py          the reference tool (needs Python 3.9+ and: pip install jsonschema)
+fmjl_pdf.py      the PDF importer (needs: pip install pymupdf)
 rulebook/        the specification, version 0.4, in both forms
 examples/        a sample document with its images/ folder
 fmjl-vscode/     the VS Code extension: convert, syntax coloring and live checking
@@ -82,6 +83,24 @@ fmjl notes.fmjl                    # same shortcut the other way
 `fmjl` is the small `fmjl.cmd` file in this folder. Add the folder to your PATH once and
 the word works from anywhere. Without it, write `python fmjl.py new notes.md`.
 
+## From a PDF
+
+```powershell
+fmjl report.pdf          # writes report.fmjl, report.md and images/, then checks
+```
+
+The importer reads the text layer of the PDF and turns it into elements: headings by
+font size, paragraphs, lists, tables (with or without ruling lines), images with their
+captions linked by `reference`, and repeated headers, footers and page numbers marked as
+`noise`. Every element carries `page` (counted from 0) and `bbox` (0 to 1000), so a RAG
+system can cite the exact place on the page. A paragraph that runs over a page break is
+linked to its first half with `continues`. Open the `.md` afterwards, fix what the
+importer got wrong, and run `fmjl report.md`; the ids stay.
+
+Pages without a text layer (scans) need OCR. Install Tesseract and the importer uses it;
+without it, the page is reported and skipped. `examples/solar_report.pdf` is a sample
+with its imported `.fmjl` and `.md`.
+
 <!-- e14 -->
 All commands:
 
@@ -95,6 +114,7 @@ All commands:
 | `python fmjl.py view notes.fmjl` | Prints the document as clean Markdown |
 | `python fmjl.py info notes.fmjl` | Prints the title, element counts and an outline |
 | `python fmjl.py upgrade old.fmjl` | Turns a version 0.1, 0.2 or 0.3 file into 0.4 |
+| `python fmjl.py pdf report.pdf` | PDF to storage form, authoring form and `images/` |
 
 <!-- e16 -->
 ## What the benchmark shows
