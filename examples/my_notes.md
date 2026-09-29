@@ -1,5 +1,5 @@
 ---
-fmjl: "0.5"
+fmjl: "1.0"
 doc: my_notes
 lang: en
 access: ["all"]
@@ -7,7 +7,7 @@ source: my_notes.md
 sha256: 9cd119ad4147f353981d163c12bb56711e458e467cafca0243ca59047b759fed
 protection: none
 signed: false
-converter: fmjl 0.5
+converter: fmjl 1.0
 created: 2026-09-26T22:34:39Z
 last_id: 10
 ---

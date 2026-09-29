@@ -205,16 +205,31 @@ pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --h
 
 ## Stage 15: Release version 1.0
 
-- [ ] Rulebook renamed to version 1.0; `.fmjl` regenerated with `new`
-- [ ] `fmjl.py` VERSION and CONVERTER set to `1.0`; extension `1.0.0`; PyPI `1.0.0`
-- [ ] Git tag `v1.0.0`; GitHub release with the `.vsix`, the `.exe` and the rulebook attached
-- [ ] Announce: one post with the benchmark table and a link, so people find it
+- [x] Rulebook renamed to version 1.0 (`rulebook/fmjl_rulebook_v1.0.*`, 0.5 in `archive/`); `.fmjl` regenerated with `new`, ids kept; section 17 has the 1.0 entry and section 13 the 1.x reader promise
+- [x] `fmjl` VERSION and CONVERTER set to `1.0`; extension `1.0.0`; PyPI `1.0.0`; every example regenerated as 1.0; docs rebuilt
+- [x] Release artifacts built into `dist/` (wheel, sdist, `fmjl.exe`) and `fmjl-vscode/fmjl-1.0.0.vsix`
+- [ ] Publish, in this order (each needs your account):
+
+```powershell
+cd G:\FMJL
+git add -A
+git commit -m "FMJL 1.0"
+git tag v1.0.0
+git push --tags origin main
+twine upload dist/fmjl-1.0.0*
+cd fmjl-vscode
+npx @vscode/vsce publish
+```
+
+- [ ] GitHub release: on the repository page open Releases, "Draft a new release", choose tag `v1.0.0`, title `FMJL 1.0`, paste `project/ANNOUNCEMENT.md`, attach `dist/fmjl.exe`, `fmjl-vscode/fmjl-1.0.0.vsix`, `rulebook/fmjl_rulebook_v1.0.md` and `rulebook/fmjl_rulebook_v1.0.fmjl`
+- [ ] GitHub Pages: Settings, Pages, Source "Deploy from a branch", branch `main`, folder `/docs`; the site is then https://rupakkumar-76319.github.io/fmjl/
+- [ ] GitHub topics (stage 14) if not yet done
+- [x] Announce: `project/ANNOUNCEMENT.md` is the post, with the benchmark table and the links
 
 ---
 
 ## Where you are today (2026-09-29)
 
-Stages 1 to 14 are built: rulebook 0.5, the tool with ten commands, the PDF and Word importers,
-the retriever output, the extension 0.6.0, the PyPI package and `fmjl.exe`. Three steps need your
-accounts: upload to PyPI, publish the extension, set the GitHub topics (stage 14).
-Next is stage 15, the 1.0 release. `NOTES.md` collects findings for rulebook 0.6.
+Everything is built for version 1.0: rulebook 1.0, the `fmjl` package, the PDF and Word importers, the
+retriever output, extension 1.0.0, `fmjl.exe`, the website in `docs/`, and the announcement. What is left
+is publishing with your accounts, listed in stage 15. After that, findings go to `project/NOTES.md` for 1.1.

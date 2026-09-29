@@ -62,7 +62,7 @@ function validate(text, base) {
     add(head.line, 'line 1 must be the header line with "type":"document"');
   }
   for (const f of REQUIRED_HEADER) if (!(f in h)) add(head.line, "header is missing '" + f + "' (run: fmjl fill)");
-  if (isStr(h.version) && !/^[0-9]+\.[0-9]+$/.test(h.version)) addF(head, "version", "version must look like 0.3");
+  if (isStr(h.version) && !/^[0-9]+\.[0-9]+$/.test(h.version)) addF(head, "version", "version must look like 1.0");
   if (isStr(h.doc) && !/^[a-z0-9_-]+$/.test(h.doc)) addF(head, "doc", "doc uses lowercase letters, digits, _ or -");
   if (isStr(h.sha256) && !/^[0-9a-f]{64}$/.test(h.sha256)) addF(head, "sha256", "sha256 must be 64 hex characters");
   if ("protection" in h && !["none", "password", "certificate", "drm"].includes(h.protection))

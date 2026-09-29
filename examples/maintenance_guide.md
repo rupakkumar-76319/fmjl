@@ -1,5 +1,5 @@
 ---
-fmjl: "0.5"
+fmjl: "1.0"
 doc: maintenance_guide
 title: "Solar Schools Programme: Maintenance Guide"
 authors: Rupak Kumar
@@ -10,8 +10,8 @@ source: maintenance_guide.docx
 sha256: dc28681b1b9bec066d2a701bc0095e30ace49320b025636a871d6bbfec01804f
 protection: none
 signed: false
-converter: fmjl docx 0.5
-created: 2026-09-29T12:09:05Z
+converter: fmjl docx 1.0
+created: 2026-09-29T12:17:45Z
 last_id: 20
 meta: {"pages": 2}
 ---

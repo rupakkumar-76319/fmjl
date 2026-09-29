@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fmjl - reference tool for FMJL (.fmjl), rulebook version 0.5. Install: pip install fmjl
+"""fmjl - reference tool for FMJL (.fmjl), rulebook version 1.0. Install: pip install fmjl
 
 One document, two forms:
   name.fmjl   storage form   one JSON object per line, for machines
@@ -19,7 +19,7 @@ Commands (fmjl = the installed command, or: python -m fmjl):
   fmjl check notes.fmjl              check every rule, print errors with line numbers
   fmjl view notes.fmjl               print the document as clean Markdown
   fmjl info notes.fmjl               print title, element counts and an outline
-  fmjl upgrade old.fmjl              turn a version 0.1 to 0.4 file into 0.5
+  fmjl upgrade old.fmjl              turn a version 0.1 to 0.5 file into 1.0
   fmjl pdf report.pdf                PDF -> report.fmjl, report.md and images/ (pip install pymupdf)
   fmjl docx report.docx              Word -> report.fmjl, report.md and images/
   fmjl chunks notes.fmjl             retriever-ready chunks as JSON Lines (--by section, --since old.fmjl)
@@ -32,7 +32,7 @@ As a library:
   fmjl.check("notes.fmjl")                  list of errors, empty when the file passes
 
 Needs Python 3.9+ and: pip install jsonschema
-The rulebook (fmjl_rulebook_v0.5.md) is the authority. If this tool and the
+The rulebook (fmjl_rulebook_v1.0.md) is the authority. If this tool and the
 rulebook disagree, this tool has a bug.
 
 Copyright (c) 2026 Rupak Kumar. MIT License, see LICENSE.
@@ -48,8 +48,8 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
-VERSION = "0.5"
-CONVERTER = "fmjl 0.5"
+VERSION = "1.0"
+CONVERTER = "fmjl 1.0"
 
 TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
          "footnote", "form_field", "annotation", "redaction", "noise", "message", "utterance",
@@ -84,7 +84,7 @@ LINK_RE = re.compile(r"\]\(#([a-z0-9_-]+)\)")
 
 SCHEMA = json.loads(r'''{
  "$schema": "https://json-schema.org/draft/2020-12/schema",
- "title": "FMJL line, version 0.5",
+ "title": "FMJL line, version 1.0",
  "oneOf": [
   {
    "$ref": "#/$defs/header"
@@ -1714,8 +1714,8 @@ def info_text(rows):
 def upgrade_rows(rows, base=None):
     h = rows[0]
     old = h.get("version")
-    if old not in (None, "0.1", "0.2", "0.3", "0.4", "0.5"):
-        raise ValueError(f"cannot upgrade version {old}; this tool knows 0.1 to 0.5")
+    if old not in (None, "0.1", "0.2", "0.3", "0.4", "0.5", "1.0"):
+        raise ValueError(f"cannot upgrade version {old}; this tool knows 0.1 to 1.0")
     h["version"] = VERSION
     if old != VERSION:
         h["converter"] = f"{h.get('converter', 'unknown')}; upgraded by {CONVERTER}"
@@ -1774,7 +1774,7 @@ def main(argv=None):
                         ("check", "check every rule; print errors with line numbers"),
                         ("view", "print the document as clean Markdown"),
                         ("info", "print title, element counts and an outline"),
-                        ("upgrade", "turn a version 0.1 to 0.4 file into version 0.5"),
+                        ("upgrade", "turn a version 0.1 to 0.5 file into version 1.0"),
                         ("pdf", "PDF -> storage form, authoring form and images/"),
                         ("docx", "Word -> storage form, authoring form and images/"),
                         ("chunks", "retriever-ready chunks as JSON Lines, one per element or section")]:

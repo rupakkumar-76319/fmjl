@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fmjl"
-version = "0.5.0"
+version = "1.0.0"
 description = "FMJL (.fmjl): one document, two forms. JSON Lines container, Markdown text, LaTeX formulas, HTML merged-cell tables, built for RAG. Converter, checker, PDF and Word importers, retriever chunks."
 readme = { text = """# FMJL
 
@@ -28,7 +28,7 @@ authors = [{ name = "Rupak Kumar" }]
 requires-python = ">=3.9"
 keywords = ["fmjl", "jsonl", "markdown", "rag", "document", "pdf", "docx", "retrieval"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -45,7 +45,7 @@ fmjl = "fmjl:main"
 
 [project.urls]
 Homepage = "https://github.com/rupakkumar-76319/fmjl"
-Rulebook = "https://github.com/rupakkumar-76319/fmjl/blob/main/rulebook/fmjl_rulebook_v0.5.md"
+Rulebook = "https://github.com/rupakkumar-76319/fmjl/blob/main/rulebook/fmjl_rulebook_v1.0.md"
 Issues = "https://github.com/rupakkumar-76319/fmjl/issues"
 
 [tool.setuptools]

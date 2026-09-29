@@ -1,5 +1,5 @@
 ---
-fmjl: "0.5"
+fmjl: "1.0"
 doc: readme
 lang: en
 access: ["all"]
@@ -82,7 +82,7 @@ with their citation, and asks Claude when the `anthropic` package and a key are 
 Two lines of the storage form, `notes.fmjl`:
 
 ```json
-{"type":"document","version":"0.5","doc":"notes","source":"notes.md","sha256":"...","protection":"none","signed":false,"converter":"fmjl 0.5","structure":true,"elements":2,"created":"2026-09-29T10:00:00Z","lang":"en","access":["all"],"last_id":2}
+{"type":"document","version":"1.0","doc":"notes","source":"notes.md","sha256":"...","protection":"none","signed":false,"converter":"fmjl 1.0","structure":true,"elements":2,"created":"2026-09-29T10:00:00Z","lang":"en","access":["all"],"last_id":2}
 {"id":"notes#e2","hash":"b91ad9f6b39e617a","type":"paragraph","parent":"notes#e1","page":0,"bbox":[80,110,920,170],"characters":105,"md":"This policy applies to all full-time employees from their first day of work."}
 ```
 
@@ -144,7 +144,7 @@ imported `.fmjl` and `.md`.
 | `fmjl check notes.fmjl` | Checks every rule of the rulebook |
 | `fmjl view notes.fmjl` | Prints the document as clean Markdown |
 | `fmjl info notes.fmjl` | Prints the title, element counts and an outline |
-| `fmjl upgrade old.fmjl` | Turns a version 0.1 to 0.4 file into 0.5 |
+| `fmjl upgrade old.fmjl` | Turns a version 0.1 to 0.5 file into 1.0 |
 | `fmjl pdf report.pdf` | PDF to storage form, authoring form and `images/` |
 | `fmjl docx report.docx` | Word to storage form, authoring form and `images/` |
 | `fmjl chunks report.fmjl` | Retriever-ready chunks as JSON Lines |
@@ -191,7 +191,7 @@ proves the two give byte-identical output on every document in this repository.
 ```text
 fmjl/            the Python package: the converter and checker, the PDF and Word importers, chunks
 pyproject.toml   the PyPI package: pip install fmjl
-rulebook/        the specification, version 0.5, in both forms
+rulebook/        the specification, version 1.0, in both forms
 docs/            the website, https://rupakkumar-76319.github.io/fmjl/ : introduction and rulebook
 examples/        sample documents (Markdown, PDF, Word) with their images/, rag_demo.py, and the sample generators
 fmjl-vscode/     the VS Code extension: convert, syntax coloring and live checking
@@ -202,9 +202,10 @@ archive/         older versions of the rulebook and the extension
 
 ## Status
 
-Draft, version 0.5. The rulebook is the authority; if the tool and the rulebook
-disagree, the tool has a bug. Version 1.0 follows once the package, the extension and
-the executable have been used on real documents by people other than the author.
+Version 1.0. The rulebook is the authority; if the tool and the rulebook disagree, the
+tool has a bug. From 1.0 on, every 1.x reader reads every 1.x file: later minor versions
+only add optional fields, types or subtypes. The website is
+https://rupakkumar-76319.github.io/fmjl/
 
 ## Author and license
 

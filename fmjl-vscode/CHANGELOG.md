@@ -1,4 +1,6 @@
 # Changelog
+## 1.0.0
+- Matches rulebook version 1.0, the first stable version. Files written as 0.5 stay valid; the converter writes `"version":"1.0"`.
 ## 0.6.0
 - Matches rulebook version 0.5: merged cells can be typed in a Markdown table with `^` (join the cell above) and `<` (join the cell to the left); the converter writes the HTML and shows the shortcut again when converting back.
 - Notes accept `reference=above` and `reference=below`, so a caption can point at its picture without knowing the id.

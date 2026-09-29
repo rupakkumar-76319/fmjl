@@ -23,11 +23,11 @@ jobs:
           done
       - name: Round trip the rulebook
         run: |
-          python -m fmjl md rulebook/fmjl_rulebook_v0.5.fmjl -o /tmp/rb.md
+          python -m fmjl md rulebook/fmjl_rulebook_v1.0.fmjl -o /tmp/rb.md
           python -m fmjl new /tmp/rb.md -o /tmp/rb.fmjl --doc fmjl_rulebook
           python - <<'EOF'
           import json
-          a = [json.loads(l) for l in open("rulebook/fmjl_rulebook_v0.5.fmjl", encoding="utf-8")]
+          a = [json.loads(l) for l in open("rulebook/fmjl_rulebook_v1.0.fmjl", encoding="utf-8")]
           b = [json.loads(l) for l in open("/tmp/rb.fmjl", encoding="utf-8")]
           assert a[1:] == b[1:], "elements changed in the round trip"
           print("round trip ok:", len(a) - 1, "elements")

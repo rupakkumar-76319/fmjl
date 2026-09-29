@@ -2,7 +2,7 @@
 
 Findings that the rulebook did not cover. Each one is resolved in the next rulebook version or listed as still open.
 
-## Still open (rulebook 0.5, section 18)
+## Still open (rulebook 1.0, section 18)
 
 1. Formulas in a PDF are read as ordinary text; there is no way yet to recover LaTeX from a PDF (was note 7).
 2. Reading order for two-column pages uses a simple left-then-right rule per band; three columns or a sidebar come out wrong (was note 13).

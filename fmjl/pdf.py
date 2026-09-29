@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fmjl.pdf - PDF importer for FMJL, rulebook version 0.5.
+"""fmjl.pdf - PDF importer for FMJL, rulebook version 1.0.
 
   fmjl report.pdf                    writes report.fmjl, report.md and images/
   fmjl pdf report.pdf [-o report.fmjl] [--doc name]
@@ -538,7 +538,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
         prev = e
 
     meta = pdf.metadata or {}
-    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl pdf 0.5"}
+    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl pdf 1.0"}
     title = (meta.get("title") or "").strip()
     if not title:
         for e in els:

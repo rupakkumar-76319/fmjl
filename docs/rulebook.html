@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FMJL Rulebook, Version 0.5</title>
+<title>FMJL Rulebook, Version 1.0</title>
 <meta name="description" content="The rules of FMJL: one document, two forms, twenty element types, and the JSON Schema.">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -19,8 +19,8 @@
 </nav>
 </header>
 <main>
-<h1 id="fmjl-rulebook-version-0-5">FMJL Rulebook, Version 0.5</h1>
-<p>Status: draft. License: MIT, copyright Rupak Kumar.</p>
+<h1 id="fmjl-rulebook-version-1-0">FMJL Rulebook, Version 1.0</h1>
+<p>Status: released, version 1.0. License: MIT, copyright Rupak Kumar. Website: https://rupakkumar-76319.github.io/fmjl/</p>
 <p>This rulebook is the authority for FMJL. The <code>fmjl</code> tool, the Python package of the same name, is the reference implementation: if the tool and this rulebook disagree, the tool has a bug.</p>
 <h2 id="1-what-fmjl-is">1. What FMJL Is</h2>
 <p>FMJL stores any document as a list of small parts called elements, such as headings, paragraphs, tables, and images. It is built so that people can read and write documents easily, and machines can search and use them quickly.</p>
@@ -133,7 +133,7 @@
 <tr>
 <td><code>version</code></td>
 <td>Text</td>
-<td>The rulebook version the file follows, for example <code>&quot;0.5&quot;</code></td>
+<td>The rulebook version the file follows, for example <code>&quot;1.0&quot;</code></td>
 </tr>
 <tr>
 <td><code>doc</code></td>
@@ -761,13 +761,13 @@ Please submit the form by Friday.
 <ol>
 <li>Readers ignore fields they do not know, so newer files stay readable.</li>
 <li>Readers treat unknown types as <code>paragraph</code>.</li>
-<li>A reader for version 0.x can read any file of version 0.x. The <code>fmjl upgrade</code> command turns older files into the current version.</li>
+<li>A reader for version 1.x reads any file of version 1.x: a later minor version only adds optional fields, types, or subtypes, and readers ignore what they do not know. The <code>fmjl upgrade</code> command turns 0.x files into the current version.</li>
 </ol>
 <h2 id="14-json-schema">14. JSON Schema</h2>
 <p>This schema checks every line of the storage form automatically (JSON Schema draft 2020-12). A line is valid if it matches either the header or the element definition. Checks that need the whole file are listed in section 11.</p>
 <pre><code class="language-json">{
   &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
-  &quot;title&quot;: &quot;FMJL line, version 0.5&quot;,
+  &quot;title&quot;: &quot;FMJL line, version 1.0&quot;,
   &quot;oneOf&quot;: [
     {
       &quot;$ref&quot;: &quot;#/$defs/header&quot;
@@ -1236,7 +1236,7 @@ Please submit the form by Friday.
 </code></pre>
 <h2 id="15-examples">15. Examples</h2>
 <p>A short leave policy PDF in the storage form:</p>
-<pre><code class="language-json">{&quot;type&quot;:&quot;document&quot;,&quot;version&quot;:&quot;0.5&quot;,&quot;doc&quot;:&quot;leave_policy&quot;,&quot;source&quot;:&quot;leave_policy.pdf&quot;,&quot;sha256&quot;:&quot;af179a761f988e6a40d5154b3c3ce735ba94d23ebd82d8e24e3d80de4e2dda68&quot;,&quot;protection&quot;:&quot;none&quot;,&quot;signed&quot;:false,&quot;converter&quot;:&quot;docling 2.x&quot;,&quot;structure&quot;:true,&quot;elements&quot;:6,&quot;created&quot;:&quot;2026-09-26T10:30:00Z&quot;,&quot;lang&quot;:&quot;en&quot;,&quot;access&quot;:[&quot;all&quot;],&quot;title&quot;:&quot;Leave Policy&quot;,&quot;last_id&quot;:6}
+<pre><code class="language-json">{&quot;type&quot;:&quot;document&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;doc&quot;:&quot;leave_policy&quot;,&quot;source&quot;:&quot;leave_policy.pdf&quot;,&quot;sha256&quot;:&quot;af179a761f988e6a40d5154b3c3ce735ba94d23ebd82d8e24e3d80de4e2dda68&quot;,&quot;protection&quot;:&quot;none&quot;,&quot;signed&quot;:false,&quot;converter&quot;:&quot;docling 2.x&quot;,&quot;structure&quot;:true,&quot;elements&quot;:6,&quot;created&quot;:&quot;2026-09-26T10:30:00Z&quot;,&quot;lang&quot;:&quot;en&quot;,&quot;access&quot;:[&quot;all&quot;],&quot;title&quot;:&quot;Leave Policy&quot;,&quot;last_id&quot;:6}
 {&quot;id&quot;:&quot;leave_policy#e1&quot;,&quot;hash&quot;:&quot;b323ab53d73b48e7&quot;,&quot;type&quot;:&quot;heading&quot;,&quot;level&quot;:1,&quot;parent&quot;:null,&quot;page&quot;:0,&quot;bbox&quot;:[80,60,620,95],&quot;characters&quot;:14,&quot;md&quot;:&quot;# Leave Policy&quot;}
 {&quot;id&quot;:&quot;leave_policy#e2&quot;,&quot;hash&quot;:&quot;b91ad9f6b39e617a&quot;,&quot;type&quot;:&quot;paragraph&quot;,&quot;parent&quot;:&quot;leave_policy#e1&quot;,&quot;page&quot;:0,&quot;bbox&quot;:[80,110,920,170],&quot;characters&quot;:105,&quot;md&quot;:&quot;This policy applies to all full-time employees from their first day of work. See [Table 1](#leave-types).&quot;}
 {&quot;id&quot;:&quot;leave_policy#e3&quot;,&quot;hash&quot;:&quot;79e15a433bf84d1c&quot;,&quot;type&quot;:&quot;table&quot;,&quot;label&quot;:&quot;leave-types&quot;,&quot;parent&quot;:&quot;leave_policy#e1&quot;,&quot;page&quot;:0,&quot;bbox&quot;:[80,190,700,330],&quot;characters&quot;:89,&quot;md&quot;:&quot;| Leave type | Days per year |\n| --- | --- |\n| Sick leave | 12 |\n| Paternity leave | 15 |&quot;}
@@ -1246,7 +1246,7 @@ Please submit the form by Friday.
 </code></pre>
 <p>The same document in the authoring form:</p>
 <pre><code class="language-markdown">---
-fmjl: &quot;0.5&quot;
+fmjl: &quot;1.0&quot;
 doc: leave_policy
 title: Leave Policy
 lang: en
@@ -1314,7 +1314,7 @@ Page 1
 </tr>
 <tr>
 <td><code>fmjl upgrade old.fmjl</code></td>
-<td>Turns a version 0.1 to 0.4 file into version 0.5</td>
+<td>Turns a version 0.1 to 0.5 file into version 1.0</td>
 </tr>
 <tr>
 <td><code>fmjl pdf report.pdf</code></td>
@@ -1338,11 +1338,11 @@ Page 1
 <li>Version 0.3: the authoring form; canonical Markdown; IDs that never change; labels; the <code>group</code> type; <code>continues</code>; <code>meta</code>; header fields <code>title</code>, <code>authors</code>, <code>date</code>, <code>summary</code>, and <code>last_id</code>; <code>elements</code> may be <code>null</code> while writing; JPG and SVG images; retrieval rules become recommendations; the rulebook becomes the authority over the tool.</li>
 <li>Version 0.4: the format is named FMJL, short for Format, Markdown, JSON Lines; the placeholder name &quot;Format X&quot; is retired; the license is MIT. No rules changed, so 0.3 files stay valid.</li>
 <li>Version 0.5: merged cells can be written in a Markdown table with <code>^</code> and <code>&lt;</code>, and tool-written HTML has one canonical form (sections 8 and 9.2); <code>above</code> and <code>below</code> in notes (9.3); the group title explained (9.4); the <code>md</code> form of footnotes (7.5); <code>fmjl.</code> names reserved in <code>meta</code> (7.6); importer rules (10.1); chunks defined (12.1); the tool warns about a table typed without its separator row; the <code>pdf</code>, <code>docx</code>, and <code>chunks</code> commands. No 0.4 file becomes invalid, so <code>fmjl upgrade</code> only changes the version.</li>
+<li>Version 1.0: the first stable version. No rules changed since 0.5. The <code>fmjl</code> package is on PyPI, the extension on the Marketplace, <code>fmjl.exe</code> on the GitHub release, and this rulebook on the website. From 1.0 on, every 1.x reader reads every 1.x file (section 13).</li>
 </ol>
 <p>Moving from 0.2 to 0.3: run <code>fmjl upgrade</code>. Some <code>md</code> texts change once into canonical form, so their hashes change and those elements are embedded again once.</p>
 <h2 id="18-not-decided-yet">18. Not Decided Yet</h2>
 <ol>
-<li>Version 1.0 will be released after the accuracy benchmark. From 1.0 on, every 1.x reader will read every 1.x file.</li>
 <li>Recovering LaTeX from formulas in PDF files, where only the drawn characters are available.</li>
 <li>Reading order for pages with three or more columns or with sidebars; the importer handles two columns.</li>
 <li>OCR for scanned pages: the path exists and needs Tesseract, but its <code>confidence</code> values have not been checked against real scans.</li>

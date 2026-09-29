@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fmjl.docx - Word importer for FMJL, rulebook version 0.5.
+"""fmjl.docx - Word importer for FMJL, rulebook version 1.0.
 
   fmjl report.docx                   writes report.fmjl, report.md and images/
   fmjl docx report.docx [-o report.fmjl] [--doc name]
@@ -662,7 +662,7 @@ def import_docx(path, doc=None, out_dir=None):
                 e["md"] = "Image " + e["id"].rsplit("#e", 1)[1]
         keep.append(e)
 
-    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl docx 0.5"}
+    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl docx 1.0"}
     h.update(_meta(docx))
     ins = sum(1 for _ in body.iter(_w("ins"))) + sum(1 for _ in body.iter(_w("moveTo")))
     dels = sum(1 for _ in body.iter(_w("del"))) + sum(1 for _ in body.iter(_w("moveFrom")))
