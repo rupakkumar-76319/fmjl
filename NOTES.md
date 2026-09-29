@@ -16,3 +16,11 @@
 11. An OCR text layer from an old scan has no reliable font sizes, so almost no headings are found. A scanned paper needs a different heading rule, for example all-capital short lines.
 12. The importer has an OCR path for pages without text, but it is untested because Tesseract is not installed here.
 13. Reading order for two-column pages is handled by a simple left-then-right rule per band; a page with three columns or a sidebar will come out wrong.
+
+## From the Word importer (2026-09-29)
+
+14. Formulas in Word (OMML) are read as plain text. A converter from OMML to LaTeX would make Word the best source for formulas.
+15. Word has no pages; the importer uses the page breaks Word recorded at its last save, which can be stale. No bbox is possible.
+16. Tracked changes: insertions are read as final text and deletions are dropped, without any warning.
+17. Word captions sit above tables and below figures; the importer links to the nearest image or table, before or after. A caption between a table and an image is ambiguous.
+18. Footnotes are separate elements with reference= to the citing paragraph, and the paragraph text carries [^n]. The rulebook does not say how footnote markers should appear in md.

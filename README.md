@@ -57,6 +57,7 @@ One document has two forms that hold the same information:
 ```text
 fmjl.py          the reference tool (needs Python 3.9+ and: pip install jsonschema)
 fmjl_pdf.py      the PDF importer (needs: pip install pymupdf)
+fmjl_docx.py     the Word importer (needs nothing else)
 rulebook/        the specification, version 0.4, in both forms
 examples/        a sample document with its images/ folder
 fmjl-vscode/     the VS Code extension: convert, syntax coloring and live checking
@@ -83,10 +84,11 @@ fmjl notes.fmjl                    # same shortcut the other way
 `fmjl` is the small `fmjl.cmd` file in this folder. Add the folder to your PATH once and
 the word works from anywhere. Without it, write `python fmjl.py new notes.md`.
 
-## From a PDF
+## From a PDF or a Word file
 
 ```powershell
 fmjl report.pdf          # writes report.fmjl, report.md and images/, then checks
+fmjl report.docx         # the same from Word
 ```
 
 The importer reads the text layer of the PDF and turns it into elements: headings by
@@ -100,6 +102,11 @@ importer got wrong, and run `fmjl report.md`; the ids stay.
 Pages without a text layer (scans) need OCR. Install Tesseract and the importer uses it;
 without it, the page is reported and skipped. `examples/solar_report.pdf` is a sample
 with its imported `.fmjl` and `.md`.
+
+A Word file already knows its structure, so the Word importer reads it directly: headings
+from the Heading styles, bullet and numbered lists, tables with merged cells written as
+HTML, images with captions, footnotes, the header and footer as `noise`, and page numbers
+from the page breaks Word recorded. `examples/maintenance_guide.docx` is a sample.
 
 <!-- e14 -->
 All commands:
@@ -115,6 +122,7 @@ All commands:
 | `python fmjl.py info notes.fmjl` | Prints the title, element counts and an outline |
 | `python fmjl.py upgrade old.fmjl` | Turns a version 0.1, 0.2 or 0.3 file into 0.4 |
 | `python fmjl.py pdf report.pdf` | PDF to storage form, authoring form and `images/` |
+| `python fmjl.py docx report.docx` | Word to storage form, authoring form and `images/` |
 
 <!-- e16 -->
 ## What the benchmark shows

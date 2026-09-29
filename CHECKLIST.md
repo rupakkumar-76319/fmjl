@@ -155,9 +155,9 @@ npx @vscode/vsce publish
 
 ## Stage 11: Word importer
 
-- [ ] `fmjl_docx.py`: `fmjl report.docx` writes `report.fmjl` and `report.md`
-- [ ] Headings, lists, tables with merged cells, images, captions, footnotes taken from the document structure
-- [ ] Tested on three real Word files; findings added to `NOTES.md`
+- [x] `fmjl_docx.py`: `fmjl report.docx` writes `report.fmjl` and `report.md`
+- [x] Headings, lists, tables with merged cells, images, captions, footnotes taken from the document structure
+- [ ] Tested on three real Word files (done: one generated sample; real files still needed); findings in `NOTES.md`
 
 ---
 
