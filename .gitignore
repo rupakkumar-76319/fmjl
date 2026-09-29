@@ -8,5 +8,5 @@ dist/
 *.spec
 .venv/
 .env
-project\HISTORY.fmjl
-project\HISTORY.md
+project/HISTORY.fmjl
+project/HISTORY.md
