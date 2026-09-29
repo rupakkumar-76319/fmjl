@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fmjl"
+version = "0.5.0"
+description = "FMJL (.fmjl): one document, two forms. JSON Lines container, Markdown text, LaTeX formulas, HTML merged-cell tables, built for RAG. Converter, checker, PDF and Word importers, retriever chunks."
+readme = { text = """# FMJL
+
+FMJL, short for Format, Markdown, JSON Lines, stores a document as one JSON object per line: one element (heading, paragraph, table, formula, image, caption...) with a stable id, a content hash, its page and position, and who may read it. People write and edit the same document as normal Markdown; the tool converts both ways without renumbering anything.
+
+    pip install fmjl            # converter, checker, Word importer, chunks
+    pip install fmjl[pdf]       # adds the PDF importer (PyMuPDF)
+
+    fmjl notes.md               # Markdown  -> notes.fmjl, then checks it
+    fmjl notes.fmjl             # .fmjl     -> notes.md, ids kept
+    fmjl report.pdf             # PDF       -> report.fmjl, report.md, images/
+    fmjl report.docx            # Word      -> the same
+    fmjl chunks report.fmjl     # retriever-ready chunks as JSON Lines
+
+From Python: `import fmjl`; `fmjl.load`, `fmjl.chunks`, `fmjl.changed_chunks`, `fmjl.check`.
+
+Rulebook, examples, benchmark and the VS Code extension: https://github.com/rupakkumar-76319/fmjl
+""", content-type = "text/markdown" }
+license = { text = "MIT" }
+authors = [{ name = "Rupak Kumar" }]
+requires-python = ">=3.9"
+keywords = ["fmjl", "jsonl", "markdown", "rag", "document", "pdf", "docx", "retrieval"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["jsonschema>=4"]
+
+[project.optional-dependencies]
+pdf = ["pymupdf>=1.24"]
+
+[project.scripts]
+fmjl = "fmjl:main"
+
+[project.urls]
+Homepage = "https://github.com/rupakkumar-76319/fmjl"
+Rulebook = "https://github.com/rupakkumar-76319/fmjl/blob/main/rulebook/fmjl_rulebook_v0.5.md"
+Issues = "https://github.com/rupakkumar-76319/fmjl/issues"
+
+[tool.setuptools]
+py-modules = ["fmjl", "fmjl_pdf", "fmjl_docx"]

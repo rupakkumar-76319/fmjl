@@ -504,9 +504,50 @@ def fixed_chunks(text, size=1000):
     return [text[i:i + size] for i in range(0, len(text), size)]
 
 
+def importers():
+    """Import the sample PDF and Word file and score what came out (rulebook 10.1)."""
+    import shutil
+    import tempfile
+    out = {}
+    samples = [("PDF (examples/solar_report.pdf)", "pdf"), ("Word (examples/maintenance_guide.docx)", "docx")]
+    tmp = Path(tempfile.mkdtemp(prefix="fmjl-bench-"))
+    for label, kind in samples:
+        src = next(HERE.parent.glob(f"examples/*.{kind}"))
+        try:
+            mod = __import__("fmjl_" + kind)
+        except ImportError as e:
+            out[label] = {"importer available": f"no ({e})"}
+            continue
+        t0 = time.perf_counter()
+        rows, warnings = (mod.import_pdf if kind == "pdf" else mod.import_docx)(src, out_dir=tmp)
+        ms = (time.perf_counter() - t0) * 1000
+        target = tmp / src.with_suffix(".fmjl").name
+        fmjl.write_rows(target, rows)
+        els = rows[1:]
+        by_id = {e["id"]: e for e in els}
+        captions = [e for e in els if e["type"] == "caption"]
+        out[label] = {
+            "import time (ms)": round(ms, 1),
+            "elements": len(els),
+            "headings": sum(1 for e in els if e["type"] == "heading"),
+            "tables": sum(1 for e in els if e["type"] == "table"),
+            "tables with merged cells (html)": sum(1 for e in els if e["type"] == "table" and "html" in e),
+            "images": sum(1 for e in els if e["type"] == "image"),
+            "captions linked to their image or table": f"{sum(1 for c in captions if by_id.get(c.get('reference'), {}).get('type') in ('image', 'table'))}/{len(captions)}",
+            "formulas as LaTeX": sum(1 for e in els if e["type"] == "formula"),
+            "elements with a page": f"{sum(1 for e in els if 'page' in e or 'pages' in e)}/{len(els)}",
+            "elements with a bbox": f"{sum(1 for e in els if 'bbox' in e)}/{len(els)}",
+            "noise (headers, footers, page numbers)": sum(1 for e in els if e["type"] == "noise"),
+            "passes fmjl check": not fmjl.check(target),
+            "warnings": len(warnings),
+        }
+    shutil.rmtree(tmp, ignore_errors=True)
+    return out
+
+
 def main():
     out_dir = HERE
-    results = {"accuracy": {}, "speed": {}, "efficiency": {}, "stability": {}}
+    results = {"accuracy": {}, "speed": {}, "efficiency": {}, "stability": {}, "importers": {}}
     count = tokenizer()
     big_model = with_paths([copy.deepcopy(e) for _ in range(100) for e in TRUTH])
     content_chars = sum(len(s) for s in SENTENCES) + sum(len(e.get("text", "")) for e in TRUTH if e["type"] in ("heading", "caption")) \
@@ -617,6 +658,7 @@ def main():
             "detects a silently changed letter": detected,
         }
 
+    results["importers"] = importers()
     (out_dir / "results.json").write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
     return results
 
@@ -627,14 +669,15 @@ if __name__ == "__main__":
         print(f"\n=== {section.upper()} ===")
         names = list(data)
         rows = list(next(iter(data.values())))
-        print(f"{'':44s}" + "".join(f"{n:>14s}" for n in names))
+        width = 14 if section != "importers" else 40
+        print(f"{'':44s}" + "".join(f"{n:>{width}s}" for n in names))
         for row in rows:
             vals = []
             for n in names:
-                v = data[n][row]
+                v = data[n].get(row, "")
                 if isinstance(v, tuple):
                     v = f"{v[0]}/{v[1]}"
                 elif isinstance(v, float):
                     v = f"{v:.2f}"
-                vals.append(f"{str(v):>14s}")
+                vals.append(f"{str(v):>{width}s}")
             print(f"{row:44s}" + "".join(vals))

@@ -1795,7 +1795,7 @@ def main(argv=None):
         try:
             importer = __import__("fmjl_" + a.cmd)
         except ImportError as e:
-            need = "pip install pymupdf" if a.cmd == "pdf" else "nothing else"
+            need = 'pip install pymupdf (or: pip install "fmjl[pdf]")' if a.cmd == "pdf" else "nothing else"
             print(f"error: the {a.cmd} importer needs fmjl_{a.cmd}.py next to fmjl.py and: {need} ({e})")
             return 2
         args = [str(path)] + (["-o", a.output] if a.output else []) + (["--doc", a.doc] if a.doc else [])

@@ -179,12 +179,27 @@ npx @vscode/vsce publish
 
 ## Stage 14: Make it available to everyone
 
-- [ ] Python package on PyPI: `pip install fmjl` gives the `fmjl` command with the converter and both importers
-- [ ] `fmjl.exe` for Windows (PyInstaller) attached to the GitHub release, for people without Python
-- [ ] Extension published with the converter (0.6.0, matches rulebook 0.5), then bumped with each rulebook change
-- [ ] README rewritten for a stranger: what FMJL is, install in one line, convert in one line, use in RAG in ten lines
-- [ ] GitHub: topics set, issue templates, a test workflow that runs `npm test` and the Python checks on every push
-- [ ] Benchmark re-run with the importers included; results in `README.md`
+- [x] Python package built: `pyproject.toml`, `python -m build` gives `dist/fmjl-0.5.0-py3-none-any.whl` and the sdist; installed in a clean venv, the `fmjl` command converts, imports Word files and makes chunks (`pip install "fmjl[pdf]"` adds PyMuPDF)
+- [x] Uploaded to PyPI on 2026-09-29: https://pypi.org/project/fmjl/ ; `pip install fmjl` in a clean environment gives 0.5.0 and a working command. For later releases:
+
+```powershell
+cd G:\FMJL
+python -m build
+twine upload dist/fmjl-0.5.0*
+```
+
+- [x] `fmjl.exe` for Windows built with PyInstaller into `dist/` (not committed; attach it to the 1.0 release in stage 15):
+
+```powershell
+pip uninstall -y typing
+pyinstaller --onefile --clean --name fmjl --hidden-import fmjl_pdf --hidden-import fmjl_docx --hidden-import pymupdf --exclude-module torch --exclude-module torchvision --exclude-module torchaudio --exclude-module tensorflow --exclude-module transformers --exclude-module sklearn --exclude-module scipy --exclude-module matplotlib --exclude-module pandas --exclude-module numpy --exclude-module PIL --exclude-module cv2 --exclude-module IPython --exclude-module jupyter --exclude-module tkinter --distpath dist --workpath build\pyinstaller --specpath build fmjl.py
+```
+
+- [ ] Publish extension 0.6.0 (matches rulebook 0.5): `cd fmjl-vscode` then `npx @vscode/vsce publish`
+- [x] README rewritten for a stranger: what FMJL is, install in one line, convert in one line, use in RAG in ten lines
+- [x] GitHub: issue templates in `.github/ISSUE_TEMPLATE/`, test workflow `.github/workflows/test.yml` (Python checks, round trip, importers, package build, `npm test` on every push)
+- [ ] GitHub topics: on the repository page click the gear next to About and add `fmjl`, `rag`, `document-format`, `jsonl`, `markdown`, `pdf`, `docx`, `retrieval`
+- [x] Benchmark re-run with the importers included (`benchmark/results.json` has an `importers` section); the table is in `README.md`
 
 ---
 
@@ -199,6 +214,7 @@ npx @vscode/vsce publish
 
 ## Where you are today (2026-09-29)
 
-Stages 1 to 13 are complete: rulebook 0.5, the tool with ten commands, the PDF and Word importers,
-the retriever output and the extension 0.6.0 (built, not yet published).
-Next is stage 14, making it available to everyone. `NOTES.md` collects findings for rulebook 0.6.
+Stages 1 to 14 are built: rulebook 0.5, the tool with ten commands, the PDF and Word importers,
+the retriever output, the extension 0.6.0, the PyPI package and `fmjl.exe`. Three steps need your
+accounts: upload to PyPI, publish the extension, set the GitHub topics (stage 14).
+Next is stage 15, the 1.0 release. `NOTES.md` collects findings for rulebook 0.6.

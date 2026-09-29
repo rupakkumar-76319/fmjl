@@ -187,28 +187,28 @@
   },
   "speed": {
     "FMJL": {
-      "read 1 doc (ms)": 0.09439999985261238,
-      "read 100 docs (ms)": 10.335599999962142,
-      "write 100 docs (ms)": 25.594299999283976,
-      "find first table in 100 docs (ms)": 2.282850000028702
+      "read 1 doc (ms)": 0.11094999945271411,
+      "read 100 docs (ms)": 12.704499999927066,
+      "write 100 docs (ms)": 27.75290000045061,
+      "find first table in 100 docs (ms)": 1.012349999655271
     },
     "Markdown": {
-      "read 1 doc (ms)": 1.5394500001093547,
-      "read 100 docs (ms)": 161.92810000029567,
-      "write 100 docs (ms)": 0.8318000000144821,
-      "find first table in 100 docs (ms)": 461.48184999992736
+      "read 1 doc (ms)": 1.6390999999202904,
+      "read 100 docs (ms)": 176.27379999976256,
+      "write 100 docs (ms)": 0.9362000000692206,
+      "find first table in 100 docs (ms)": 172.26140000047963
     },
     "JSON": {
-      "read 1 doc (ms)": 0.02924999989772914,
-      "read 100 docs (ms)": 4.091599999810569,
-      "write 100 docs (ms)": 5.719300000237126,
-      "find first table in 100 docs (ms)": 6.6556000001583016
+      "read 1 doc (ms)": 0.028100000236008782,
+      "read 100 docs (ms)": 4.517999999734457,
+      "write 100 docs (ms)": 6.575100000191014,
+      "find first table in 100 docs (ms)": 2.4527499999749125
     },
     "LaTeX": {
-      "read 1 doc (ms)": 15.51069999959509,
-      "read 100 docs (ms)": 4511.521200000061,
-      "write 100 docs (ms)": 81.20659999985946,
-      "find first table in 100 docs (ms)": 0.008800000614428427
+      "read 1 doc (ms)": 17.719749999741907,
+      "read 100 docs (ms)": 1680.7490000001053,
+      "write 100 docs (ms)": 31.195499999739695,
+      "find first table in 100 docs (ms)": 0.0029500001801352482
     }
   },
   "efficiency": {
@@ -273,6 +273,38 @@
       "chunks to re-embed after the edit": "6 of 6 chunks",
       "elements recovered from a 90% cut file": "20/23",
       "detects a silently changed letter": false
+    }
+  },
+  "importers": {
+    "PDF (examples/solar_report.pdf)": {
+      "import time (ms)": 110.1,
+      "elements": 25,
+      "headings": 6,
+      "tables": 1,
+      "tables with merged cells (html)": 0,
+      "images": 1,
+      "captions linked to their image or table": "2/2",
+      "formulas as LaTeX": 0,
+      "elements with a page": "25/25",
+      "elements with a bbox": "25/25",
+      "noise (headers, footers, page numbers)": 6,
+      "passes fmjl check": true,
+      "warnings": 0
+    },
+    "Word (examples/maintenance_guide.docx)": {
+      "import time (ms)": 32.3,
+      "elements": 20,
+      "headings": 5,
+      "tables": 2,
+      "tables with merged cells (html)": 1,
+      "images": 1,
+      "captions linked to their image or table": "3/3",
+      "formulas as LaTeX": 0,
+      "elements with a page": "20/20",
+      "elements with a bbox": "0/20",
+      "noise (headers, footers, page numbers)": 2,
+      "passes fmjl check": true,
+      "warnings": 0
     }
   }
 }

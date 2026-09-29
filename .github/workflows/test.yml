@@ -1,0 +1,61 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install jsonschema pymupdf
+      - name: Check every document in the repository
+        run: |
+          for f in examples/*.fmjl rulebook/*.fmjl README.fmjl; do
+            echo "$f"; python fmjl.py check "$f"
+          done
+      - name: Round trip the rulebook
+        run: |
+          python fmjl.py md rulebook/fmjl_rulebook_v0.5.fmjl -o /tmp/rb.md
+          python fmjl.py new /tmp/rb.md -o /tmp/rb.fmjl --doc fmjl_rulebook
+          python - <<'EOF'
+          import json
+          a = [json.loads(l) for l in open("rulebook/fmjl_rulebook_v0.5.fmjl", encoding="utf-8")]
+          b = [json.loads(l) for l in open("/tmp/rb.fmjl", encoding="utf-8")]
+          assert a[1:] == b[1:], "elements changed in the round trip"
+          print("round trip ok:", len(a) - 1, "elements")
+          EOF
+      - name: Import the sample PDF and Word file
+        run: |
+          mkdir -p /tmp/imp
+          python fmjl.py pdf examples/solar_report.pdf -o /tmp/imp/solar_report.fmjl
+          python fmjl.py docx examples/maintenance_guide.docx -o /tmp/imp/maintenance_guide.fmjl
+          python fmjl.py chunks /tmp/imp/solar_report.fmjl --by section | head -c 300
+      - name: Build the package
+        run: |
+          pip install build
+          python -m build
+          pip install dist/*.whl
+          fmjl check examples/my_notes.fmjl
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: pip install jsonschema
+      - name: Converter matches fmjl.py byte for byte
+        working-directory: fmjl-vscode
+        run: npm test
