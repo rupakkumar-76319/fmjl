@@ -700,7 +700,7 @@ def main(argv=None):
     print(f"wrote {out} ({len(rows) - 1} elements)")
     if not a.no_md:
         md = out.with_suffix(".md")
-        md.write_text(fmjl.export_md(rows), encoding="utf-8", newline="\n")
+        fmjl.write_text(md, fmjl.export_md(rows))
         print(f"wrote {md}")
     for w in dict.fromkeys(warnings):
         print("warning: " + w)

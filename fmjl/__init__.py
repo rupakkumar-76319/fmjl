@@ -603,6 +603,12 @@ def write_rows(path, rows):
             f.write(dumps(r) + "\n")
 
 
+def write_text(path, text):
+    """Write UTF-8 text with \\n line endings on every platform (Python 3.9 compatible)."""
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+
+
 def _split_row(line):
     """Split one Markdown table row into cells. `\\|` stays inside a cell."""
     s = line.strip()
@@ -1816,7 +1822,7 @@ def main(argv=None):
         if a.cmd == "md":
             rows = read_rows(path)
             out = _out(path, ".md", a.output)
-            out.write_text(export_md(rows), encoding="utf-8", newline="\n")
+            write_text(out, export_md(rows))
             print(f"wrote {out}")
             return 0
         if a.cmd == "fill":
@@ -1839,7 +1845,7 @@ def main(argv=None):
                 out = changed_chunks(out, chunks(read_rows(a.since), by=a.by, max_chars=a.max_chars))
             text = chunks_text(out)
             if a.output:
-                Path(a.output).write_text(text, encoding="utf-8", newline="\n")
+                write_text(a.output, text)
                 print(f"wrote {a.output} ({len(out)} chunks)")
             else:
                 sys.stdout.write(text)
