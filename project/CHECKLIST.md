@@ -212,9 +212,10 @@ pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --h
 - [x] Python 3.9 fixes after the first CI run (`Path.write_text(newline=)` and PyMuPDF 1.26 `Rect.get_area`); package 1.0.1 built, tested on 3.9 and 3.13
 - [ ] Publish the fix: `git add -A`, `git commit -m "Python 3.9 and PyMuPDF 1.26 fixes; package 1.0.1"`, `git tag -f v1.0.0`, `git push origin main`, `git push -f origin v1.0.0`, then `twine upload dist/fmjl-1.0.1*`
 
-- [ ] GitHub release: on the repository page open Releases, "Draft a new release", choose tag `v1.0.0`, title `FMJL 1.0`, paste `project/ANNOUNCEMENT.md`, attach `dist/fmjl.exe`, `fmjl-vscode/fmjl-1.0.0.vsix`, `rulebook/fmjl_rulebook_v1.0.md` and `rulebook/fmjl_rulebook_v1.0.fmjl`
-- [ ] GitHub Pages: Settings, Pages, Source "Deploy from a branch", branch `main`, folder `/docs`; the site is then https://rupakkumar-76319.github.io/fmjl/
-- [ ] GitHub topics (stage 14) if not yet done
+- [x] GitHub release `v1.0.0` published 2026-09-30 with `fmjl.exe`, `fmjl-1.0.0.vsix` and both rulebook files attached
+- [x] GitHub Pages live at https://rupakkumar-76319.github.io/fmjl/ (introduction and rulebook)
+- [x] PyPI 1.0.1 (the Python 3.9 fix) is the latest version; the tag `v1.0.0` points at the green commit
+- [x] GitHub topics set (2026-09-30): fmjl, rag, retrieval-augmented-generation, document-format, jsonl, markdown, pdf, docx, retrieval
 - [x] Announce: `project/ANNOUNCEMENT.md` is the post, with the benchmark table and the links
 
 ---
