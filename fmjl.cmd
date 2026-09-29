@@ -1,2 +1,3 @@
 @echo off
-python "%~dp0fmjl.py" %*
+set "PYTHONPATH=%~dp0"
+python -m fmjl %*

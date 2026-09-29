@@ -10,8 +10,8 @@ source: solar_report.pdf
 sha256: edfd89daee9a584a8f0cda053f0d547f79e757a290840ed87ddf28d91a45d8b4
 protection: none
 signed: false
-converter: fmjl_pdf 0.5
-created: 2026-09-29T10:01:44Z
+converter: fmjl pdf 0.5
+created: 2026-09-29T12:09:05Z
 last_id: 25
 meta: {"pages": 3}
 ---

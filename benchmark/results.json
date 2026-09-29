@@ -187,28 +187,28 @@
   },
   "speed": {
     "FMJL": {
-      "read 1 doc (ms)": 0.11094999945271411,
-      "read 100 docs (ms)": 12.704499999927066,
-      "write 100 docs (ms)": 27.75290000045061,
-      "find first table in 100 docs (ms)": 1.012349999655271
+      "read 1 doc (ms)": 0.09630000113247661,
+      "read 100 docs (ms)": 13.657100000273203,
+      "write 100 docs (ms)": 30.753099999856204,
+      "find first table in 100 docs (ms)": 2.1717999998145388
     },
     "Markdown": {
-      "read 1 doc (ms)": 1.6390999999202904,
-      "read 100 docs (ms)": 176.27379999976256,
-      "write 100 docs (ms)": 0.9362000000692206,
-      "find first table in 100 docs (ms)": 172.26140000047963
+      "read 1 doc (ms)": 1.5574500002912828,
+      "read 100 docs (ms)": 204.476999999315,
+      "write 100 docs (ms)": 0.875000001542503,
+      "find first table in 100 docs (ms)": 250.71674999981042
     },
     "JSON": {
-      "read 1 doc (ms)": 0.028100000236008782,
-      "read 100 docs (ms)": 4.517999999734457,
-      "write 100 docs (ms)": 6.575100000191014,
-      "find first table in 100 docs (ms)": 2.4527499999749125
+      "read 1 doc (ms)": 0.03575000027922215,
+      "read 100 docs (ms)": 3.9402999991580145,
+      "write 100 docs (ms)": 6.287099999099155,
+      "find first table in 100 docs (ms)": 2.5853999995888444
     },
     "LaTeX": {
-      "read 1 doc (ms)": 17.719749999741907,
-      "read 100 docs (ms)": 1680.7490000001053,
-      "write 100 docs (ms)": 31.195499999739695,
-      "find first table in 100 docs (ms)": 0.0029500001801352482
+      "read 1 doc (ms)": 17.895750000207045,
+      "read 100 docs (ms)": 5182.850900000631,
+      "write 100 docs (ms)": 84.39309999994293,
+      "find first table in 100 docs (ms)": 0.002899999344663229
     }
   },
   "efficiency": {
@@ -277,34 +277,10 @@
   },
   "importers": {
     "PDF (examples/solar_report.pdf)": {
-      "import time (ms)": 110.1,
-      "elements": 25,
-      "headings": 6,
-      "tables": 1,
-      "tables with merged cells (html)": 0,
-      "images": 1,
-      "captions linked to their image or table": "2/2",
-      "formulas as LaTeX": 0,
-      "elements with a page": "25/25",
-      "elements with a bbox": "25/25",
-      "noise (headers, footers, page numbers)": 6,
-      "passes fmjl check": true,
-      "warnings": 0
+      "importer available": "no (No module named 'fmjl_pdf')"
     },
     "Word (examples/maintenance_guide.docx)": {
-      "import time (ms)": 32.3,
-      "elements": 20,
-      "headings": 5,
-      "tables": 2,
-      "tables with merged cells (html)": 1,
-      "images": 1,
-      "captions linked to their image or table": "3/3",
-      "formulas as LaTeX": 0,
-      "elements with a page": "20/20",
-      "elements with a bbox": "0/20",
-      "noise (headers, footers, page numbers)": 2,
-      "passes fmjl check": true,
-      "warnings": 0
+      "importer available": "no (No module named 'fmjl_docx')"
     }
   }
 }

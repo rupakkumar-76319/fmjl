@@ -28,7 +28,7 @@ merged cells.
 
 ## Notes
 - The converter is pure JavaScript and needs no Python. Its output is byte-identical to the
-  reference tool `fmjl.py`; the test in `test/roundtrip.js` checks that on every document
+  reference Python package `fmjl`; the test in `test/roundtrip.js` checks that on every document
   in the repository.
 - The rulebook is the authority. If this extension and the rulebook disagree, the
   extension has a bug: https://github.com/rupakkumar-76319/fmjl/issues

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""fmjl_pdf.py - PDF importer for FMJL, rulebook version 0.5.
+"""fmjl.pdf - PDF importer for FMJL, rulebook version 0.5.
 
   fmjl report.pdf                    writes report.fmjl, report.md and images/
-  python fmjl_pdf.py report.pdf [-o report.fmjl] [--doc name]
+  fmjl pdf report.pdf [-o report.fmjl] [--doc name]
 
 What it does with a page:
   text blocks   headings (by font size), paragraphs, lists
@@ -538,7 +538,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
         prev = e
 
     meta = pdf.metadata or {}
-    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl_pdf 0.5"}
+    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl pdf 0.5"}
     title = (meta.get("title") or "").strip()
     if not title:
         for e in els:
@@ -559,7 +559,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="fmjl_pdf", description=__doc__,
+    ap = argparse.ArgumentParser(prog="fmjl pdf", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("file")
     ap.add_argument("-o", "--output", help="output .fmjl (default: same name next to the PDF)")

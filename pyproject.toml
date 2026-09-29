@@ -49,4 +49,4 @@ Rulebook = "https://github.com/rupakkumar-76319/fmjl/blob/main/rulebook/fmjl_rul
 Issues = "https://github.com/rupakkumar-76319/fmjl/issues"
 
 [tool.setuptools]
-py-modules = ["fmjl", "fmjl_pdf", "fmjl_docx"]
+packages = ["fmjl"]

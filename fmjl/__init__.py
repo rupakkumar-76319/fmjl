@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fmjl.py - reference tool for FMJL (.fmjl), rulebook version 0.5.
+"""fmjl - reference tool for FMJL (.fmjl), rulebook version 0.5. Install: pip install fmjl
 
 One document, two forms:
   name.fmjl   storage form   one JSON object per line, for machines
@@ -12,17 +12,17 @@ Short form (the file extension says the direction):
   fmjl report.pdf                    PDF -> report.fmjl and report.md
   fmjl report.docx                   Word -> report.fmjl and report.md
 
-Commands:
-  python fmjl.py new notes.md        authoring form  -> storage form (notes.fmjl)
-  python fmjl.py md notes.fmjl       storage form    -> authoring form (notes.md)
-  python fmjl.py fill notes.fmjl     fill id, hash, characters, parent; make md canonical
-  python fmjl.py check notes.fmjl    check every rule, print errors with line numbers
-  python fmjl.py view notes.fmjl     print the document as clean Markdown
-  python fmjl.py info notes.fmjl     print title, element counts and an outline
-  python fmjl.py upgrade old.fmjl    turn a version 0.1 to 0.4 file into 0.5
-  python fmjl.py pdf report.pdf      PDF -> report.fmjl, report.md and images/ (needs fmjl_pdf.py)
-  python fmjl.py docx report.docx    Word -> report.fmjl, report.md and images/ (needs fmjl_docx.py)
-  python fmjl.py chunks notes.fmjl   retriever-ready chunks as JSON Lines (--by section, --since old.fmjl)
+Commands (fmjl = the installed command, or: python -m fmjl):
+  fmjl new notes.md                  authoring form  -> storage form (notes.fmjl)
+  fmjl md notes.fmjl                 storage form    -> authoring form (notes.md)
+  fmjl fill notes.fmjl               fill id, hash, characters, parent; make md canonical
+  fmjl check notes.fmjl              check every rule, print errors with line numbers
+  fmjl view notes.fmjl               print the document as clean Markdown
+  fmjl info notes.fmjl               print title, element counts and an outline
+  fmjl upgrade old.fmjl              turn a version 0.1 to 0.4 file into 0.5
+  fmjl pdf report.pdf                PDF -> report.fmjl, report.md and images/ (pip install pymupdf)
+  fmjl docx report.docx              Word -> report.fmjl, report.md and images/
+  fmjl chunks notes.fmjl             retriever-ready chunks as JSON Lines (--by section, --since old.fmjl)
 
 As a library:
   import fmjl
@@ -1394,7 +1394,7 @@ def _schema_errors(obj, kind):
             if path and path[0] == "allOf" and path[1] in _ALLOF_MSG:
                 yield _ALLOF_MSG[path[1]]
             else:
-                yield f"missing '{name}' (run: python fmjl.py fill)"
+                yield f"missing '{name}' (run: fmjl fill)"
         elif err.validator == "not":
             yield "use page or pages, never both"
         elif err.validator == "dependentRequired":
@@ -1451,9 +1451,9 @@ def check_rows(numbered, base=None):
             canon = canonical_md(t, md, e.get("latex") if isinstance(e.get("latex"), str) else None,
                                  e.get("html") if isinstance(e.get("html"), str) else None)
             if canon != md:
-                add(n, "md is not canonical Markdown (run: python fmjl.py fill)")
+                add(n, "md is not canonical Markdown (run: fmjl fill)")
             if isinstance(e.get("hash"), str) and e["hash"] != element_hash(t, md):
-                add(n, "hash is wrong (run: python fmjl.py fill)")
+                add(n, "hash is wrong (run: fmjl fill)")
             if isinstance(e.get("characters"), int) and e["characters"] != len(md):
                 add(n, f"characters should be {len(md)}")
             if t == "heading" and isinstance(e.get("level"), int):
@@ -1502,7 +1502,7 @@ def check_rows(numbered, base=None):
     if isinstance(h.get("elements"), int) and h["elements"] != count:
         add(first_line, f"elements says {h['elements']} but the file has {count}")
     elif h and h.get("elements") is None and "elements" in h:
-        add(first_line, "elements is null: the file is not finished (run: python fmjl.py fill)")
+        add(first_line, "elements is null: the file is not finished (run: fmjl fill)")
     errors.sort(key=lambda s: int(s.split(":")[0][5:]))
     return errors
 
@@ -1793,10 +1793,11 @@ def main(argv=None):
     path = Path(a.file)
     if a.cmd in ("pdf", "docx"):
         try:
-            importer = __import__("fmjl_" + a.cmd)
+            import importlib
+            importer = importlib.import_module("fmjl." + a.cmd)
         except ImportError as e:
-            need = 'pip install pymupdf (or: pip install "fmjl[pdf]")' if a.cmd == "pdf" else "nothing else"
-            print(f"error: the {a.cmd} importer needs fmjl_{a.cmd}.py next to fmjl.py and: {need} ({e})")
+            need = 'pip install pymupdf (or: pip install "fmjl[pdf]")' if a.cmd == "pdf" else "the fmjl package"
+            print(f"error: the {a.cmd} importer needs {need} ({e})")
             return 2
         args = [str(path)] + (["-o", a.output] if a.output else []) + (["--doc", a.doc] if a.doc else [])
         return importer.main(args)
@@ -1854,10 +1855,3 @@ def main(argv=None):
         return 2
     return 0
 
-
-if __name__ == "__main__":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except AttributeError:
-        pass
-    sys.exit(main())

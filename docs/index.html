@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introducing FMJL</title>
+<meta name="description" content="FMJL, short for Format, Markdown, JSON Lines: a document format that combines JSON Lines, Markdown, LaTeX and HTML for retrieval-augmented generation.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<a href="index.html" class="brand">FMJL</a>
+<nav>
+<a href="index.html">Introduction</a>
+<a href="rulebook.html">Rulebook</a>
+<a href="https://pypi.org/project/fmjl/">PyPI</a>
+<a href="https://marketplace.visualstudio.com/items?itemName=rupakkumar.fmjl">VS Code</a>
+<a href="https://github.com/rupakkumar-76319/fmjl">GitHub</a>
+</nav>
+</header>
+<main>
+
+<h1>Introducing FMJL</h1>
+
+<p class="lead">FMJL, short for Format, Markdown, JSON Lines, is a document format built for retrieval. A document becomes a list of small parts called elements: headings, paragraphs, lists, tables, formulas, images, captions, footnotes. Each element has a stable id, a content hash, its page and position on the page, and who may read it. That is exactly what a search engine or a RAG system needs, and it is what every other format leaves out.</p>
+
+<p>FMJL is not one more markup language. It combines four languages that already exist, each doing the one job it is best at:</p>
+
+<table>
+<tr><th>Language</th><th>Job in FMJL</th><th>Why that one</th></tr>
+<tr><td>JSON Lines</td><td>The container: one element per line, with its id, hash, page, position and permissions</td><td>Every programming language reads JSON; one line per element means a file can be streamed, searched and cut without a parser</td></tr>
+<tr><td>Markdown</td><td>All readable text: headings, paragraphs, lists, simple tables, image descriptions</td><td>People can read and write it directly; it is the language of GitHub, VS Code and every editor</td></tr>
+<tr><td>LaTeX</td><td>Math formulas</td><td>The only language that writes every formula exactly</td></tr>
+<tr><td>HTML</td><td>Tables with merged cells or multi-level headers</td><td>Markdown tables cannot merge cells; HTML can</td></tr>
+</table>
+
+<h2>One document, two forms</h2>
+
+<p>Every FMJL document exists in two forms that hold exactly the same information. Machines read the storage form. People read and write the authoring form. A tool converts either way, and elements that did not change keep their ids and hashes.</p>
+
+<figure>
+<svg viewBox="0 0 760 130" width="760" height="130" xmlns="http://www.w3.org/2000/svg" font-family="Verdana, sans-serif" font-size="14">
+<rect x="20" y="30" width="250" height="70" rx="6" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="145" y="58" text-anchor="middle" font-weight="bold">name.fmjl</text>
+<text x="145" y="82" text-anchor="middle" fill="#555">storage form, for machines</text>
+<rect x="490" y="30" width="250" height="70" rx="6" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="615" y="58" text-anchor="middle" font-weight="bold">name.md</text>
+<text x="615" y="82" text-anchor="middle" fill="#555">authoring form, for people</text>
+<path d="M270 52 H480" stroke="#111" stroke-width="1.5" fill="none"/>
+<path d="M472 46 L482 52 L472 58" stroke="#111" stroke-width="1.5" fill="none"/>
+<text x="380" y="46" text-anchor="middle" font-size="13">fmjl name.fmjl</text>
+<path d="M490 80 H280" stroke="#111" stroke-width="1.5" fill="none"/>
+<path d="M288 74 L278 80 L288 86" stroke="#111" stroke-width="1.5" fill="none"/>
+<text x="380" y="98" text-anchor="middle" font-size="13">fmjl name.md</text>
+</svg>
+<figcaption>The file extension tells the tool which way to convert.</figcaption>
+</figure>
+
+<h2>The storage form</h2>
+
+<p>A <code>.fmjl</code> file is UTF-8 text with one JSON object per line. The first line is the header and describes the document. Every following line is one element, in reading order.</p>
+
+<figure>
+<svg viewBox="0 0 760 120" width="760" height="120" xmlns="http://www.w3.org/2000/svg" font-family="Consolas, monospace" font-size="14">
+<line x1="10" y1="60" x2="60" y2="60" stroke="#111" stroke-width="1.5"/>
+<rect x="60" y="40" width="130" height="40" rx="20" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="125" y="65" text-anchor="middle">header line</text>
+<line x1="190" y1="60" x2="250" y2="60" stroke="#111" stroke-width="1.5"/>
+<line x1="250" y1="60" x2="250" y2="20" stroke="#111" stroke-width="1.5"/>
+<line x1="250" y1="20" x2="560" y2="20" stroke="#111" stroke-width="1.5"/>
+<line x1="560" y1="20" x2="560" y2="60" stroke="#111" stroke-width="1.5"/>
+<text x="405" y="14" text-anchor="middle" font-family="Verdana, sans-serif" font-size="12" fill="#555">repeat, one per element</text>
+<line x1="250" y1="60" x2="300" y2="60" stroke="#111" stroke-width="1.5"/>
+<rect x="300" y="40" width="140" height="40" rx="20" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="370" y="65" text-anchor="middle">element line</text>
+<line x1="440" y1="60" x2="560" y2="60" stroke="#111" stroke-width="1.5"/>
+<line x1="560" y1="60" x2="620" y2="60" stroke="#111" stroke-width="1.5"/>
+<rect x="620" y="40" width="70" height="40" rx="20" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="655" y="65" text-anchor="middle">\n</text>
+<line x1="690" y1="60" x2="750" y2="60" stroke="#111" stroke-width="1.5"/>
+<text x="405" y="108" text-anchor="middle" font-family="Verdana, sans-serif" font-size="12" fill="#555">every line ends with a newline; there are no empty lines</text>
+</svg>
+<figcaption>The whole grammar of a <code>.fmjl</code> file.</figcaption>
+</figure>
+
+<p>The header has twelve required fields: the rulebook version, the document name, the original file and its SHA-256, how the original was protected, whether it was signed, the converter, whether headings were found, the number of elements, when it was created, its language, and the default permission.</p>
+
+<pre><code>{"type":"document","version":"0.5","doc":"leave_policy","source":"leave_policy.pdf","sha256":"af17...da68","protection":"none","signed":false,"converter":"fmjl 0.5","structure":true,"elements":6,"created":"2026-09-26T10:30:00Z","lang":"en","access":["all"],"title":"Leave Policy","last_id":6}</code></pre>
+
+<p>An element has six required fields and a few optional ones:</p>
+
+<figure>
+<svg viewBox="0 0 760 150" width="760" height="150" xmlns="http://www.w3.org/2000/svg" font-family="Consolas, monospace" font-size="13">
+<g>
+<line x1="10" y1="40" x2="40" y2="40" stroke="#111" stroke-width="1.5"/>
+<rect x="40" y="22" width="60" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="70" y="45" text-anchor="middle">id</text>
+<line x1="100" y1="40" x2="120" y2="40" stroke="#111" stroke-width="1.5"/>
+<rect x="120" y="22" width="70" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="155" y="45" text-anchor="middle">hash</text>
+<line x1="190" y1="40" x2="210" y2="40" stroke="#111" stroke-width="1.5"/>
+<rect x="210" y="22" width="70" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="245" y="45" text-anchor="middle">type</text>
+<line x1="280" y1="40" x2="300" y2="40" stroke="#111" stroke-width="1.5"/>
+<rect x="300" y="22" width="90" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="345" y="45" text-anchor="middle">parent</text>
+<line x1="390" y1="40" x2="410" y2="40" stroke="#111" stroke-width="1.5"/>
+<rect x="410" y="22" width="120" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="470" y="45" text-anchor="middle">characters</text>
+<line x1="530" y1="40" x2="550" y2="40" stroke="#111" stroke-width="1.5"/>
+<rect x="550" y="22" width="60" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="580" y="45" text-anchor="middle">md</text>
+<line x1="610" y1="40" x2="640" y2="40" stroke="#111" stroke-width="1.5"/>
+<text x="700" y="45" text-anchor="middle" font-family="Verdana, sans-serif" font-size="12" fill="#555">required</text>
+</g>
+<g>
+<line x1="10" y1="105" x2="40" y2="105" stroke="#111" stroke-width="1.5"/>
+<rect x="40" y="87" width="70" height="36" rx="4" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="75" y="110" text-anchor="middle">level</text>
+<line x1="110" y1="105" x2="125" y2="105" stroke="#111" stroke-width="1.5"/>
+<rect x="125" y="87" width="66" height="36" rx="4" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="158" y="110" text-anchor="middle">page</text>
+<line x1="191" y1="105" x2="206" y2="105" stroke="#111" stroke-width="1.5"/>
+<rect x="206" y="87" width="66" height="36" rx="4" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="239" y="110" text-anchor="middle">bbox</text>
+<line x1="272" y1="105" x2="287" y2="105" stroke="#111" stroke-width="1.5"/>
+<rect x="287" y="87" width="100" height="36" rx="4" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="337" y="110" text-anchor="middle">reference</text>
+<line x1="387" y1="105" x2="402" y2="105" stroke="#111" stroke-width="1.5"/>
+<rect x="402" y="87" width="80" height="36" rx="4" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="442" y="110" text-anchor="middle">access</text>
+<line x1="482" y1="105" x2="497" y2="105" stroke="#111" stroke-width="1.5"/>
+<rect x="497" y="87" width="66" height="36" rx="4" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="530" y="110" text-anchor="middle">latex</text>
+<line x1="563" y1="105" x2="578" y2="105" stroke="#111" stroke-width="1.5"/>
+<rect x="578" y="87" width="62" height="36" rx="4" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="609" y="110" text-anchor="middle">html</text>
+<text x="700" y="110" text-anchor="middle" font-family="Verdana, sans-serif" font-size="12" fill="#555">optional</text>
+</g>
+<text x="380" y="145" text-anchor="middle" font-family="Verdana, sans-serif" font-size="12" fill="#555">also subtype, label, pages, continues, confidence, lang, file, meta</text>
+</svg>
+<figcaption>Round boxes are required on every element; square boxes appear when they apply.</figcaption>
+</figure>
+
+<pre><code>{"id":"leave_policy#e3","hash":"79e15a433bf84d1c","type":"table","label":"leave-types","parent":"leave_policy#e1","page":0,"bbox":[80,190,700,330],"characters":89,"md":"| Leave type | Days per year |\n| --- | --- |\n| Sick leave | 12 |\n| Paternity leave | 15 |"}
+{"id":"leave_policy#e4","hash":"fd6cd4502fca6a4a","type":"caption","parent":"leave_policy#e1","page":0,"bbox":[80,335,400,355],"characters":20,"reference":"leave_policy#e3","md":"Table 1: Leave types"}</code></pre>
+
+<p>Three rules make sure nothing is lost. Every part of the original document becomes an element, including stamps, logos, watermarks and blacked-out areas. Every element from a page-based file records its page and position, so its exact spot in the original can always be found. The original file is always kept next to the FMJL files.</p>
+
+<h2>The authoring form</h2>
+
+<p>The authoring form is a normal Markdown file. The tool turns each block into one element. Anything Markdown cannot say goes into a small HTML comment before the block, which every Markdown viewer hides:</p>
+
+<pre><code>&lt;!-- e3 label=leave-types page=0 bbox=80,190,700,330 --&gt;
+| Leave type | Days per year |
+| --- | --- |
+| Sick leave | 12 |
+| Paternity leave | 15 |
+
+&lt;!-- e4 type=caption reference=above --&gt;
+Table 1: Leave types</code></pre>
+
+<figure>
+<svg viewBox="0 0 760 90" width="760" height="90" xmlns="http://www.w3.org/2000/svg" font-family="Consolas, monospace" font-size="13">
+<line x1="10" y1="45" x2="40" y2="45" stroke="#111" stroke-width="1.5"/>
+<line x1="40" y1="45" x2="40" y2="15" stroke="#111" stroke-width="1.5"/>
+<line x1="40" y1="15" x2="330" y2="15" stroke="#111" stroke-width="1.5"/>
+<line x1="330" y1="15" x2="330" y2="45" stroke="#111" stroke-width="1.5"/>
+<text x="185" y="10" text-anchor="middle" font-family="Verdana, sans-serif" font-size="12" fill="#555">optional</text>
+<line x1="40" y1="45" x2="70" y2="45" stroke="#111" stroke-width="1.5"/>
+<rect x="70" y="27" width="230" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="185" y="50" text-anchor="middle">&lt;!-- id and fields --&gt;</text>
+<line x1="300" y1="45" x2="360" y2="45" stroke="#111" stroke-width="1.5"/>
+<rect x="360" y="27" width="180" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="450" y="50" text-anchor="middle">Markdown block</text>
+<line x1="540" y1="45" x2="600" y2="45" stroke="#111" stroke-width="1.5"/>
+<rect x="600" y="27" width="110" height="36" rx="18" fill="#fff" stroke="#111" stroke-width="1.5"/>
+<text x="655" y="50" text-anchor="middle">blank line</text>
+<line x1="710" y1="45" x2="750" y2="45" stroke="#111" stroke-width="1.5"/>
+<text x="380" y="84" text-anchor="middle" font-family="Verdana, sans-serif" font-size="12" fill="#555">one element in the authoring form; a group or a multi-block element is closed with an end note</text>
+</svg>
+</figure>
+
+<p>Merged cells never need HTML by hand: in a Markdown table a cell holding only <code>^</code> joins the cell above it and <code>&lt;</code> joins the cell to its left. Display formulas are written between <code>$$</code>, images as <code>![description](images/file.png)</code>, and a figure with several images as a group.</p>
+
+<h2>Twenty element types</h2>
+
+<table>
+<tr><th>Type</th><th>Holds</th><th>Type</th><th>Holds</th></tr>
+<tr><td><code>heading</code></td><td>Titles and subtitles, with a level</td><td><code>annotation</code></td><td>Comments and handwritten notes</td></tr>
+<tr><td><code>paragraph</code></td><td>Normal text, inline math in <code>$...$</code></td><td><code>redaction</code></td><td>Blacked-out hidden parts</td></tr>
+<tr><td><code>list</code></td><td>A whole bullet or numbered list</td><td><code>noise</code></td><td>Page headers, footers, watermarks, page numbers</td></tr>
+<tr><td><code>table</code></td><td>Rows and columns, HTML when cells merge</td><td><code>message</code></td><td>One email or chat message</td></tr>
+<tr><td><code>formula</code></td><td>Display math, with <code>latex</code></td><td><code>utterance</code></td><td>One speaker's turn in a transcript</td></tr>
+<tr><td><code>code</code></td><td>Program code, kept exactly</td><td><code>record</code></td><td>One CSV row or one JSON object</td></tr>
+<tr><td><code>image</code></td><td>Pictures, charts, logos, stamps, signatures, QR codes</td><td><code>citation</code></td><td>A reference or bibliography entry</td></tr>
+<tr><td><code>caption</code></td><td>The label of a table or image</td><td><code>quote</code></td><td>Quoted text from another source</td></tr>
+<tr><td><code>footnote</code></td><td>Notes at the bottom of a page</td><td><code>toc</code></td><td>A table of contents</td></tr>
+<tr><td><code>form_field</code></td><td>Form entries and checkboxes</td><td><code>group</code></td><td>A slide, a sidebar, a figure, a sheet, a thread</td></tr>
+</table>
+
+<h2>What retrieval gets</h2>
+
+<p>The <code>hash</code> of an element is the first sixteen hexadecimal characters of the SHA-256 of its type and its Markdown. When a document is uploaded again, only elements whose hash changed need new embeddings. The <code>parent</code> chain rebuilds the section path above any element. <code>page</code> and <code>bbox</code> point at the exact region of the original. <code>access</code> is filtered before searching, so nobody sees what they may not see. <code>noise</code>, tables of contents and redactions are never embedded.</p>
+
+<pre><code>import fmjl
+
+rows = fmjl.load("report.fmjl")
+for chunk in fmjl.chunks(rows, by="section"):
+    embed(chunk["text"], metadata={"id": chunk["id"], "page": chunk.get("page"), "access": chunk["access"]})</code></pre>
+
+<h2>Tools</h2>
+
+<div class="two">
+<div>
+<p><strong>Python package.</strong> <code>pip install fmjl</code> gives the <code>fmjl</code> command: convert both ways, check every rule, import PDF and Word files, and print retriever chunks. <code>pip install "fmjl[pdf]"</code> adds the PDF importer.</p>
+<pre><code>fmjl notes.md
+fmjl notes.fmjl
+fmjl report.pdf
+fmjl report.docx
+fmjl chunks report.fmjl --by section</code></pre>
+</div>
+<div>
+<p><strong>VS Code extension.</strong> Search for FMJL in the Extensions view (publisher rupakkumar). It converts both ways without Python, colors <code>.fmjl</code> files, and underlines every rule violation while you type.</p>
+<p><strong>Windows executable.</strong> <code>fmjl.exe</code> on the GitHub Releases page does the same as the package for people without Python.</p>
+</div>
+</div>
+
+<h2>Read the rulebook</h2>
+
+<p>The <a href="rulebook.html">rulebook</a> is the authority: every field, every rule the checker enforces, the canonical form of Markdown, the JSON Schema, the importer rules, and the definition of a chunk. It is itself an FMJL document, stored in both forms in the repository. Tools in any language are welcome; they follow the rulebook, not the Python package.</p>
+
+<p><a href="https://github.com/rupakkumar-76319/fmjl">Source, examples and benchmark on GitHub</a>. Bug reports and suggestions go to the <a href="https://github.com/rupakkumar-76319/fmjl/issues">issue tracker</a>.</p>
+
+</main>
+<footer>
+<p>FMJL is released under the MIT License. Copyright Rupak Kumar. The rulebook is the authority; if a tool and the rulebook disagree, the tool has a bug.</p>
+</footer>
+</body>
+</html>

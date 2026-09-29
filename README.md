@@ -149,7 +149,7 @@ imported `.fmjl` and `.md`.
 | `fmjl docx report.docx` | Word to storage form, authoring form and `images/` |
 | `fmjl chunks report.fmjl` | Retriever-ready chunks as JSON Lines |
 
-Without the package installed, `python fmjl.py <command>` from this folder does the same;
+Without the package installed, `python -m fmjl <command>` from this folder does the same;
 `fmjl.cmd` here is the one-word shortcut for Windows.
 
 ## What the benchmark shows
@@ -183,26 +183,26 @@ Search for **FMJL** in the Extensions view and install it (publisher rupakkumar)
 no Python. Right-click a `.md` file for **FMJL: Convert Markdown to .fmjl**, or a `.fmjl`
 file for **FMJL: Convert .fmjl to Markdown**. Any `.fmjl` file gets coloring, red
 underlines for rule violations, and the command **FMJL: Check current file**. The
-extension's converter is a JavaScript port of `fmjl.py`; `npm test` in `fmjl-vscode/`
+extension's converter is a JavaScript port of the Python package; `npm test` in `fmjl-vscode/`
 proves the two give byte-identical output on every document in this repository.
 
 ## Folder layout
 
 ```text
-fmjl.py          the reference tool (needs Python 3.9+ and: pip install jsonschema)
-fmjl_pdf.py      the PDF importer (needs: pip install pymupdf)
-fmjl_docx.py     the Word importer (needs nothing else)
+fmjl/            the Python package: the converter and checker, the PDF and Word importers, chunks
 pyproject.toml   the PyPI package: pip install fmjl
 rulebook/        the specification, version 0.5, in both forms
-examples/        sample documents (Markdown, PDF, Word) with their images/, and rag_demo.py
+docs/            the website, https://rupakkumar-76319.github.io/fmjl/ : introduction and rulebook
+examples/        sample documents (Markdown, PDF, Word) with their images/, rag_demo.py, and the sample generators
 fmjl-vscode/     the VS Code extension: convert, syntax coloring and live checking
 benchmark/       the same document in FMJL, Markdown, JSON and LaTeX, and the scores
+project/         the checklist of stages and the notes for the next rulebook
 archive/         older versions of the rulebook and the extension
 ```
 
 ## Status
 
-Draft, version 0.5. The rulebook is the authority; if `fmjl.py` and the rulebook
+Draft, version 0.5. The rulebook is the authority; if the tool and the rulebook
 disagree, the tool has a bug. Version 1.0 follows once the package, the extension and
 the executable have been used on real documents by people other than the author.
 

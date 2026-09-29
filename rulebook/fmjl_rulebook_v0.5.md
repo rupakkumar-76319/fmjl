@@ -9,14 +9,15 @@ access: ["all"]
 source: fmjl_rulebook_v0.5.md
 protection: none
 signed: false
-last_id: 114
+converter: fmjl 0.5
+last_id: 124
 ---
 
 # FMJL Rulebook, Version 0.5
 
 Status: draft. License: MIT, copyright Rupak Kumar.
 
-This rulebook is the authority for FMJL. The `fmjl.py` tool is the reference implementation: if the tool and this rulebook disagree, the tool has a bug.
+This rulebook is the authority for FMJL. The `fmjl` tool, the Python package of the same name, is the reference implementation: if the tool and this rulebook disagree, the tool has a bug.
 
 ## 1. What FMJL Is
 
@@ -322,9 +323,9 @@ Please submit the form by Friday.
 
 ### 9.6 Editing an Existing Document
 
-1. Turn the storage form into the authoring form: `python fmjl.py md name.fmjl`.
+1. Turn the storage form into the authoring form: `fmjl md name.fmjl`.
 2. Edit `name.md` in any editor. Each block keeps its ID in a small note, such as `<!-- e7 -->`.
-3. Turn it back: `python fmjl.py new name.md`.
+3. Turn it back: `fmjl new name.md`.
 
 Blocks you did not change keep their IDs and hashes, new blocks get new IDs, and removed IDs are never reused.
 
@@ -941,27 +942,27 @@ Page 1
 
 ## 16. Tools
 
-The reference tool `fmjl.py` has ten commands:
+The reference tool is the Python package `fmjl` (`pip install fmjl`, or `python -m fmjl` from the repository). It has ten commands:
 
 | Command | What it does |
 | --- | --- |
-| `python fmjl.py new notes.md` | Turns the authoring form into the storage form, `notes.fmjl` |
-| `python fmjl.py md notes.fmjl` | Turns the storage form into the authoring form, `notes.md` |
-| `python fmjl.py fill notes.fmjl` | Fills in `id`, `hash`, `characters`, and `parent`, and makes `md` canonical |
-| `python fmjl.py check notes.fmjl` | Checks every rule and prints errors with line numbers |
-| `python fmjl.py view notes.fmjl` | Prints the document as clean Markdown, without notes |
-| `python fmjl.py info notes.fmjl` | Prints the title, element counts, and an outline |
-| `python fmjl.py upgrade old.fmjl` | Turns a version 0.1 to 0.4 file into version 0.5 |
-| `python fmjl.py pdf report.pdf` | Turns a PDF into both forms and an `images/` folder |
-| `python fmjl.py docx report.docx` | Turns a Word file into both forms and an `images/` folder |
-| `python fmjl.py chunks notes.fmjl` | Prints retriever-ready chunks (section 12.1) as JSON Lines |
+| `fmjl new notes.md` | Turns the authoring form into the storage form, `notes.fmjl` |
+| `fmjl md notes.fmjl` | Turns the storage form into the authoring form, `notes.md` |
+| `fmjl fill notes.fmjl` | Fills in `id`, `hash`, `characters`, and `parent`, and makes `md` canonical |
+| `fmjl check notes.fmjl` | Checks every rule and prints errors with line numbers |
+| `fmjl view notes.fmjl` | Prints the document as clean Markdown, without notes |
+| `fmjl info notes.fmjl` | Prints the title, element counts, and an outline |
+| `fmjl upgrade old.fmjl` | Turns a version 0.1 to 0.4 file into version 0.5 |
+| `fmjl pdf report.pdf` | Turns a PDF into both forms and an `images/` folder |
+| `fmjl docx report.docx` | Turns a Word file into both forms and an `images/` folder |
+| `fmjl chunks notes.fmjl` | Prints retriever-ready chunks (section 12.1) as JSON Lines |
 
 It needs Python and one package, `pip install jsonschema`; the PDF importer also needs `pip install pymupdf`. From Python, `import fmjl` gives `load`, `save`, `chunks`, `changed_chunks`, and `check`. The VS Code extension `rupakkumar.fmjl` converts between both forms without Python and checks every rule while typing. Tools in other languages are welcome; they follow this rulebook, not the Python tool.
 
 ## 17. Version History
 
 1. Version 0.1: first draft, with the extension `.jsonl`.
-2. Version 0.2: the extension `.fmjl` and the `fmjl.py` tool.
+2. Version 0.2: the extension `.fmjl` and the `fmjl` tool.
 3. Version 0.3: the authoring form; canonical Markdown; IDs that never change; labels; the `group` type; `continues`; `meta`; header fields `title`, `authors`, `date`, `summary`, and `last_id`; `elements` may be `null` while writing; JPG and SVG images; retrieval rules become recommendations; the rulebook becomes the authority over the tool.
 4. Version 0.4: the format is named FMJL, short for Format, Markdown, JSON Lines; the placeholder name "Format X" is retired; the license is MIT. No rules changed, so 0.3 files stay valid.
 5. Version 0.5: merged cells can be written in a Markdown table with `^` and `<`, and tool-written HTML has one canonical form (sections 8 and 9.2); `above` and `below` in notes (9.3); the group title explained (9.4); the `md` form of footnotes (7.5); `fmjl.` names reserved in `meta` (7.6); importer rules (10.1); chunks defined (12.1); the tool warns about a table typed without its separator row; the `pdf`, `docx`, and `chunks` commands. No 0.4 file becomes invalid, so `fmjl upgrade` only changes the version.

@@ -6,13 +6,13 @@ const { execFileSync } = require("child_process");
 const conv = require("../src/converter.js");
 
 const ROOT = path.resolve(__dirname, "..", "..");
-const TOOL = path.join(ROOT, "fmjl.py");
+const TOOL = ["-m", "fmjl"];
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "fmjl-test-"));
 let failures = 0;
 
 function python(args) {
   try {
-    return execFileSync("python", [TOOL].concat(args), { encoding: "utf8" });
+    return execFileSync("python", TOOL.concat(args), { encoding: "utf8", cwd: ROOT });
   } catch (e) {
     if (e.status === 1 && e.stdout && e.stdout.startsWith("wrote ")) return e.stdout;
     throw e;
@@ -91,4 +91,4 @@ if (failures) {
   console.log("FAILED: " + failures);
   process.exit(1);
 }
-console.log("PASSED: all conversions match fmjl.py");
+console.log("PASSED: all conversions match the Python package");

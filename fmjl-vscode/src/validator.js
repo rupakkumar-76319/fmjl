@@ -61,7 +61,7 @@ function validate(text, base) {
   if (head.line !== 0 || h.type !== "document") {
     add(head.line, 'line 1 must be the header line with "type":"document"');
   }
-  for (const f of REQUIRED_HEADER) if (!(f in h)) add(head.line, "header is missing '" + f + "' (run: python fmjl.py fill)");
+  for (const f of REQUIRED_HEADER) if (!(f in h)) add(head.line, "header is missing '" + f + "' (run: fmjl fill)");
   if (isStr(h.version) && !/^[0-9]+\.[0-9]+$/.test(h.version)) addF(head, "version", "version must look like 0.3");
   if (isStr(h.doc) && !/^[a-z0-9_-]+$/.test(h.doc)) addF(head, "doc", "doc uses lowercase letters, digits, _ or -");
   if (isStr(h.sha256) && !/^[0-9a-f]{64}$/.test(h.sha256)) addF(head, "sha256", "sha256 must be 64 hex characters");
@@ -81,7 +81,7 @@ function validate(text, base) {
   els.forEach((row, index) => {
     const e = row.obj;
     if (e.type === "document") { add(row.line, "only line 1 may be a header"); return; }
-    for (const f of REQUIRED_ELEMENT) if (!(f in e)) add(row.line, "missing '" + f + "' (run: python fmjl.py fill)");
+    for (const f of REQUIRED_ELEMENT) if (!(f in e)) add(row.line, "missing '" + f + "' (run: fmjl fill)");
     if (isStr(e.id)) {
       if (!ID_RE.test(e.id)) addF(row, "id", "id must look like " + (h.doc || "doc") + "#e7");
       else if (isStr(h.doc) && !e.id.startsWith(h.doc + "#")) addF(row, "id", "id must start with " + h.doc + "#");
@@ -143,10 +143,10 @@ function validate(text, base) {
       }
       if (TYPES.includes(e.type)) {
         const canon = canonicalMd(e.type, e.md, isStr(e.latex) ? e.latex : undefined, isStr(e.html) ? e.html : undefined);
-        if (canon !== e.md) addF(row, "md", "md is not canonical Markdown (run: python fmjl.py fill)");
+        if (canon !== e.md) addF(row, "md", "md is not canonical Markdown (run: fmjl fill)");
       }
       if (isStr(e.hash) && e.hash !== elementHash(e.type, e.md))
-        addF(row, "hash", "hash is wrong (run: python fmjl.py fill)");
+        addF(row, "hash", "hash is wrong (run: fmjl fill)");
       if (isInt(e.characters) && e.characters !== [...e.md].length && e.characters !== e.md.length)
         addF(row, "characters", "characters should be " + e.md.length);
       if (e.type === "heading" && isInt(e.level)) {

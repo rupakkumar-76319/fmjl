@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""fmjl_docx.py - Word importer for FMJL, rulebook version 0.5.
+"""fmjl.docx - Word importer for FMJL, rulebook version 0.5.
 
   fmjl report.docx                   writes report.fmjl, report.md and images/
-  python fmjl_docx.py report.docx [-o report.fmjl] [--doc name]
+  fmjl docx report.docx [-o report.fmjl] [--doc name]
 
 A .docx file already knows its structure, so the importer reads it directly:
   headings      from the Heading 1..6 and Title styles (or the outline level)
@@ -662,7 +662,7 @@ def import_docx(path, doc=None, out_dir=None):
                 e["md"] = "Image " + e["id"].rsplit("#e", 1)[1]
         keep.append(e)
 
-    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl_docx 0.5"}
+    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl docx 0.5"}
     h.update(_meta(docx))
     ins = sum(1 for _ in body.iter(_w("ins"))) + sum(1 for _ in body.iter(_w("moveTo")))
     dels = sum(1 for _ in body.iter(_w("del"))) + sum(1 for _ in body.iter(_w("moveFrom")))
@@ -682,7 +682,7 @@ def import_docx(path, doc=None, out_dir=None):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="fmjl_docx", description=__doc__,
+    ap = argparse.ArgumentParser(prog="fmjl docx", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("file")
     ap.add_argument("-o", "--output", help="output .fmjl (default: same name next to the .docx)")

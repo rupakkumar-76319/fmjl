@@ -4,7 +4,7 @@ The document (75 sentences, 2 formulas, 1 table, 1 image with a caption) is defi
 below as the ground truth. Each format has a writer (truth -> file) and a reader
 (file -> elements). Every reader's output is scored against the truth.
 
-Run: python benchmark.py        (needs fmjl.py next to it, markdown-it-py, jsonschema, pylatexenc)
+Run: python benchmark/benchmark.py        (needs the fmjl package in the parent folder, markdown-it-py, jsonschema, pylatexenc)
 """
 
 import copy

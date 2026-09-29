@@ -192,7 +192,7 @@ twine upload dist/fmjl-0.5.0*
 
 ```powershell
 pip uninstall -y typing
-pyinstaller --onefile --clean --name fmjl --hidden-import fmjl_pdf --hidden-import fmjl_docx --hidden-import pymupdf --exclude-module torch --exclude-module torchvision --exclude-module torchaudio --exclude-module tensorflow --exclude-module transformers --exclude-module sklearn --exclude-module scipy --exclude-module matplotlib --exclude-module pandas --exclude-module numpy --exclude-module PIL --exclude-module cv2 --exclude-module IPython --exclude-module jupyter --exclude-module tkinter --distpath dist --workpath build\pyinstaller --specpath build fmjl.py
+pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --hidden-import fmjl.docx --hidden-import pymupdf --exclude-module torch --exclude-module torchvision --exclude-module torchaudio --exclude-module tensorflow --exclude-module transformers --exclude-module sklearn --exclude-module scipy --exclude-module matplotlib --exclude-module pandas --exclude-module numpy --exclude-module PIL --exclude-module cv2 --exclude-module IPython --exclude-module jupyter --exclude-module tkinter --distpath dist --workpath build\pyinstaller --specpath build fmjl\__main__.py
 ```
 
 - [ ] Publish extension 0.6.0 (matches rulebook 0.5): `cd fmjl-vscode` then `npx @vscode/vsce publish`
