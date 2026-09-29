@@ -68,9 +68,10 @@ def main():
     title = m.group(1) if m else "FMJL Rulebook"
     body = render(text)
     out = HERE / "rulebook.html"
-    out.write_text(PAGE.format(title=html.escape(title), body=body,
-                               description="The rules of FMJL: one document, two forms, twenty element types, and the JSON Schema."),
-                   encoding="utf-8", newline="\n")
+    page = PAGE.format(title=html.escape(title), body=body,
+                       description="The rules of FMJL: one document, two forms, twenty element types, and the JSON Schema.")
+    with open(out, "w", encoding="utf-8", newline="\n") as f:  # Path.write_text has no newline= before 3.10
+        f.write(page)
     print(f"wrote {out} from {src[-1].name}")
     return 0
 

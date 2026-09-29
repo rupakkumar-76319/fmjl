@@ -161,6 +161,11 @@ def _table_cells(t):
     return out
 
 
+def _area(rect):
+    """Area of a Rect. pymupdf 1.26 (the last release for Python 3.9) has no Rect.get_area()."""
+    return rect.width * rect.height
+
+
 def _drawings(page, tables):
     """Vector charts and diagrams: clusters of lines and shapes that hold little text."""
     out = []
@@ -176,7 +181,7 @@ def _drawings(page, tables):
         rect = pymupdf.Rect(rect)
         if rect.width < 40 or rect.height < 40:
             continue
-        if any((t & rect).get_area() > 0.3 * min(t.get_area(), rect.get_area()) for t, _ in tables):
+        if any(_area(t & rect) > 0.3 * min(_area(t), _area(rect)) for t, _ in tables):
             continue
         inside = sum(len(txt) for r, txt in text_blocks if rect.contains(r))
         shapes = sum(1 for d in drawings if rect.contains(d["rect"]))
@@ -244,14 +249,14 @@ def _read_pages(doc, ocr):
         for b in d["blocks"]:
             rect = pymupdf.Rect(b["bbox"])
             if b["type"] == 1:
-                area = rect.get_area() / (page.rect.get_area() or 1)
+                area = _area(rect) / (_area(page.rect) or 1)
                 if scan_tiles or area < 0.004 or (area > 0.8 and not pg.no_text) or rect.width < 12 or rect.height < 12:
                     continue
                 digest = hashlib.sha1(b["image"]).hexdigest()
                 image_seen.setdefault(digest, []).append(pno)
                 pg.items.append({"kind": "image", "rect": rect, "bytes": b["image"], "digest": digest})
                 continue
-            if any(t.contains(rect) or (t & rect).get_area() > 0.5 * rect.get_area() for t, _ in tables):
+            if any(t.contains(rect) or _area(t & rect) > 0.5 * _area(rect) for t, _ in tables):
                 continue
             if any(c.contains(rect) for c in charts):
                 continue
