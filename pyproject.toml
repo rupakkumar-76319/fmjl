@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fmjl"
-version = "1.0.0"
+version = "1.0.1"
 description = "FMJL (.fmjl): one document, two forms. JSON Lines container, Markdown text, LaTeX formulas, HTML merged-cell tables, built for RAG. Converter, checker, PDF and Word importers, retriever chunks."
 readme = { text = """# FMJL
 

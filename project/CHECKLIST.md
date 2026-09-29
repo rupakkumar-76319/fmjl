@@ -208,18 +208,9 @@ pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --h
 - [x] Rulebook renamed to version 1.0 (`rulebook/fmjl_rulebook_v1.0.*`, 0.5 in `archive/`); `.fmjl` regenerated with `new`, ids kept; section 17 has the 1.0 entry and section 13 the 1.x reader promise
 - [x] `fmjl` VERSION and CONVERTER set to `1.0`; extension `1.0.0`; PyPI `1.0.0`; every example regenerated as 1.0; docs rebuilt
 - [x] Release artifacts built into `dist/` (wheel, sdist, `fmjl.exe`) and `fmjl-vscode/fmjl-1.0.0.vsix`
-- [ ] Publish, in this order (each needs your account):
-
-```powershell
-cd G:\FMJL
-git add -A
-git commit -m "FMJL 1.0"
-git tag v1.0.0
-git push --tags origin main
-twine upload dist/fmjl-1.0.0*
-cd fmjl-vscode
-npx @vscode/vsce publish
-```
+- [x] Committed and tagged `v1.0.0`; PyPI has `fmjl` 1.0.0; the Marketplace has `rupakkumar.fmjl` 1.0.0 (2026-09-29)
+- [x] Python 3.9 fixes after the first CI run (`Path.write_text(newline=)` and PyMuPDF 1.26 `Rect.get_area`); package 1.0.1 built, tested on 3.9 and 3.13
+- [ ] Publish the fix: `git add -A`, `git commit -m "Python 3.9 and PyMuPDF 1.26 fixes; package 1.0.1"`, `git tag -f v1.0.0`, `git push origin main`, `git push -f origin v1.0.0`, then `twine upload dist/fmjl-1.0.1*`
 
 - [ ] GitHub release: on the repository page open Releases, "Draft a new release", choose tag `v1.0.0`, title `FMJL 1.0`, paste `project/ANNOUNCEMENT.md`, attach `dist/fmjl.exe`, `fmjl-vscode/fmjl-1.0.0.vsix`, `rulebook/fmjl_rulebook_v1.0.md` and `rulebook/fmjl_rulebook_v1.0.fmjl`
 - [ ] GitHub Pages: Settings, Pages, Source "Deploy from a branch", branch `main`, folder `/docs`; the site is then https://rupakkumar-76319.github.io/fmjl/
