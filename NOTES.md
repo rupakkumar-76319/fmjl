@@ -1,26 +1,33 @@
 # Notes from using FMJL
 
-1. A table typed without | at the ends and no separator row became a paragraph (e4). The tool should warn.
-2. Merged cells work, but I had to write raw HTML. A shortcut would help.
-3. In a group, the first bold line becomes the group title and its id vanishes. The rulebook should say this clearly.
-4. To write reference=e9 I first had to regenerate the .md to learn the image's id.
-5. When the output .fmjl is written to another folder, the check says the image file does not exist. The message should say "copy the images folder too".
+Findings that the rulebook did not cover. Each one is resolved in the next rulebook version or listed as still open.
 
-## From the PDF importer (2026-09-29)
+## Still open (rulebook 0.5, section 18)
 
-6. Merged cells in a PDF table come out as a plain Markdown table with empty cells; the importer should write HTML with rowspan and colspan when PyMuPDF reports a merged cell.
-7. Formulas in a PDF are read as ordinary text (the letters and symbols of the equation). There is no way yet to recover LaTeX from a PDF.
-8. A figure with its caption is written as two elements linked by reference=, not as a group. The rulebook should say which one importers must produce.
-9. Charts drawn as vector graphics (lines and shapes, not an embedded picture) are skipped; only embedded images are exported.
-10. Heading levels come from font sizes, so a document with inconsistent fonts gets uneven levels (a level 4 heading directly under level 2). A "compact levels" step would help.
-11. An OCR text layer from an old scan has no reliable font sizes, so almost no headings are found. A scanned paper needs a different heading rule, for example all-capital short lines.
-12. The importer has an OCR path for pages without text, but it is untested because Tesseract is not installed here.
-13. Reading order for two-column pages is handled by a simple left-then-right rule per band; a page with three columns or a sidebar will come out wrong.
+1. Formulas in a PDF are read as ordinary text; there is no way yet to recover LaTeX from a PDF (was note 7).
+2. Reading order for two-column pages uses a simple left-then-right rule per band; three columns or a sidebar come out wrong (was note 13).
+3. The PDF importer's OCR path is untested because Tesseract is not installed here (was note 12).
 
-## From the Word importer (2026-09-29)
+## Resolved in rulebook 0.5 (2026-09-29)
 
-14. Formulas in Word (OMML) are read as plain text. A converter from OMML to LaTeX would make Word the best source for formulas.
-15. Word has no pages; the importer uses the page breaks Word recorded at its last save, which can be stale. No bbox is possible.
-16. Tracked changes: insertions are read as final text and deletions are dropped, without any warning.
-17. Word captions sit above tables and below figures; the importer links to the nearest image or table, before or after. A caption between a table and an image is ambiguous.
-18. Footnotes are separate elements with reference= to the citing paragraph, and the paragraph text carries [^n]. The rulebook does not say how footnote markers should appear in md.
+1. A table typed without the separator row became a paragraph: the tool now warns (9.2).
+2. Merged cells needed raw HTML: `^` and `<` in a Markdown table now do it, and tool-written HTML has one canonical form (8.6, 9.2).
+3. The group's first block is its title and has no id of its own: written down (9.4).
+4. Writing `reference=e9` needed the image's id: `reference=above` and `reference=below` (9.3).
+5. The missing-image message now says to copy the `images/` folder too.
+6. PDF merged cells come out as HTML with rowspan and colspan (10.1).
+7. Still open, see above.
+8. Importers write an image and its caption as two linked elements, not a group (10.1).
+9. Vector charts are rendered to PNG with their axis labels (10.1).
+10. Heading levels never jump more than one step (10.1).
+11. Scans without font sizes get headings from capital or numbered short lines (10.1).
+12. Still open, see above.
+13. Still open, see above.
+14. Word formulas (OMML) become LaTeX; display math is a `formula` element (10.1).
+15. Word pages come from recorded page breaks and never have a bbox: written down (10.1).
+16. Tracked changes are accepted with a warning and counted in `meta` as `fmjl.tracked_changes` (7.6, 10.1).
+17. A caption picks a table or an image by its first word (10.1).
+18. Footnote markers are `[^n]` and the footnote's `md` starts with `[^n]: ` (7.5).
+19. A caption or footnote joins the chunk of the element it references (12.1).
+20. A heading with nothing under it joins the next section's chunk (12.1).
+21. What a chunk is: defined (12.1).

@@ -1,5 +1,5 @@
 ---
-fmjl: "0.4"
+fmjl: "0.5"
 doc: my_notes
 lang: en
 access: ["all"]
@@ -7,7 +7,7 @@ source: my_notes.md
 sha256: 9cd119ad4147f353981d163c12bb56711e458e467cafca0243ca59047b759fed
 protection: none
 signed: false
-converter: fmjl 0.4
+converter: fmjl 0.5
 created: 2026-09-26T22:34:39Z
 last_id: 10
 ---
@@ -36,12 +36,11 @@ Prince Tiwari | VLSI Engineer
 ## Marks
 
 <!-- e6 -->
-<table>
-<tr><th rowspan="2">Name</th><th colspan="2">Score</th></tr>
-<tr><th>Math</th><th>AI</th></tr>
-<tr><td>Rupak Kumar</td><td>9</td><td>10</td></tr>
-<tr><td>Amit Kumar</td><td>8</td><td>7</td></tr>
-</table>
+| Name | Score | < |
+| --- | --- | --- |
+| ^ | Math | AI |
+| Rupak Kumar | 9 | 10 |
+| Amit Kumar | 8 | 7 |
 
 <!-- e7 -->
 ## Photo

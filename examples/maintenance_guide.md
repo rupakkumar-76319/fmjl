@@ -1,5 +1,5 @@
 ---
-fmjl: "0.4"
+fmjl: "0.5"
 doc: maintenance_guide
 title: "Solar Schools Programme: Maintenance Guide"
 authors: Rupak Kumar
@@ -10,8 +10,8 @@ source: maintenance_guide.docx
 sha256: dc28681b1b9bec066d2a701bc0095e30ace49320b025636a871d6bbfec01804f
 protection: none
 signed: false
-converter: fmjl_docx 0.4
-created: 2026-09-28T20:53:13Z
+converter: fmjl_docx 0.5
+created: 2026-09-29T09:59:02Z
 last_id: 20
 meta: {"pages": 2}
 ---
@@ -61,11 +61,10 @@ Table 1: Responsibilities
 The next table shows the fault codes; the first column is shared by two rows.
 
 <!-- e13 page=0 -->
-<table>
-<tr><th>Code</th><th>Meaning</th><th>Action</th></tr>
-<tr><td rowspan="2">E1</td><td>Low voltage</td><td>Wait for sunlight</td></tr>
-<tr><td>No voltage</td><td>Call the engineer</td></tr>
-</table>
+| Code | Meaning | Action |
+| --- | --- | --- |
+| E1 | Low voltage | Wait for sunlight |
+| ^ | No voltage | Call the engineer |
 
 <!-- e14 type=caption page=0 reference=e13 -->
 Table 2: Fault codes

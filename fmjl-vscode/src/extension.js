@@ -54,8 +54,11 @@ async function fileFor(uri, ext) {
   return uri.fsPath;
 }
 
-function report(outFile, problems) {
+function report(outFile, problems, warnings) {
   const name = path.basename(outFile);
+  if (warnings && warnings.length) {
+    vscode.window.showWarningMessage("FMJL: " + warnings.join("; "));
+  }
   if (problems.length === 0) {
     vscode.window.showInformationMessage("FMJL: wrote " + name + ", PASSED (0 errors)");
   } else {
@@ -71,12 +74,13 @@ async function toFmjl(uri) {
     const text = fs.readFileSync(file, "utf8");
     const stem = path.basename(file, path.extname(file));
     const dir = path.dirname(file);
-    const rows = conv.importMd(text, { doc: conv.docName(stem), source: path.basename(file), base: dir });
+    const warnings = [];
+    const rows = conv.importMd(text, { doc: conv.docName(stem), source: path.basename(file), base: dir, warnings: warnings });
     const out = path.join(dir, stem + ".fmjl");
     fs.writeFileSync(out, conv.writeRows(rows), "utf8");
     const document = await vscode.workspace.openTextDocument(out);
     await vscode.window.showTextDocument(document, { preview: false });
-    report(out, refresh(document) || []);
+    report(out, refresh(document) || [], warnings);
   } catch (e) {
     vscode.window.showErrorMessage("FMJL: " + e.message);
   }

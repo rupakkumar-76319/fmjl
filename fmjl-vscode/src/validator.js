@@ -116,6 +116,7 @@ function validate(text, base) {
       addF(row, "label", "label uses lowercase letters, digits, _ or -");
     if (isStr(e.label)) {
       if (labels.has(e.label)) addF(row, "label", "label " + e.label + " is used twice");
+      if (e.label === "above" || e.label === "below") addF(row, "label", "label " + e.label + " is a reserved word in notes (rulebook 9.3)");
       labels.set(e.label, e.id);
     }
     if ("page" in e && "pages" in e) addF(row, "pages", "use page or pages, never both");
@@ -155,7 +156,7 @@ function validate(text, base) {
     }
     if (isStr(e.hash) && !/^[0-9a-f]{16}$/.test(e.hash)) addF(row, "hash", "hash must be 16 hex characters");
     if (base && e.type === "image" && isStr(e.file) && /^images\/[^/]+\.(png|webp|jpg|jpeg|svg)$/.test(e.file)) {
-      if (!fs.existsSync(path.join(base, e.file))) addF(row, "file", "file " + e.file + " does not exist next to the .fmjl file");
+      if (!fs.existsSync(path.join(base, e.file))) addF(row, "file", "file " + e.file + " does not exist next to the .fmjl file (copy the images/ folder there too)");
     }
   });
 

@@ -74,6 +74,18 @@ const html = "<table>\n<tr><th rowspan=\"2\">Name</th><th colspan=\"2\">Score</t
 same("merged cells flatten like Python", conv.htmlTableToMd(html),
   "| Name | Score | Score |\n| --- | --- | --- |\n| Name | Math | AI |\n| A & B | 9 | x\\|y |");
 
+const shortcut = "| Name | Score | < |\n| --- | --- | --- |\n| ^ | Math | AI |\n| A & B | 9 | x\\|y |";
+const built = conv.shortcutToHtml([["Name", "Score", "<"], ["^", "Math", "AI"], ["A & B", "9", "x\\|y"]]);
+same("merged-cell shortcut builds the canonical HTML", built,
+  "<table>\n<tr><th rowspan=\"2\">Name</th><th colspan=\"2\">Score</th></tr>\n" +
+  "<tr><td>Math</td><td>AI</td></tr>\n<tr><td>A &amp; B</td><td>9</td><td>x|y</td></tr>\n</table>");
+const scRows = conv.importMd("---\ndoc: sc\n---\n\n" + shortcut + "\n", { doc: "sc" });
+same("merged-cell shortcut round-trips through the authoring form",
+  conv.exportMd(scRows).split("\n").slice(-6, -1).join("\n"), "<!-- e1 -->\n" + shortcut);
+const scWarn = [];
+conv.importMd("---\ndoc: sc\n---\n\nName | Age\nRupak | 20\n", { doc: "sc", warnings: scWarn });
+same("a table without separator row gives one warning", String(scWarn.length), "1");
+
 fs.rmSync(TMP, { recursive: true, force: true });
 if (failures) {
   console.log("FAILED: " + failures);

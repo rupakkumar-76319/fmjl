@@ -163,17 +163,17 @@ npx @vscode/vsce publish
 
 ## Stage 12: Retriever output
 
-- [ ] `fmjl chunks report.fmjl`: one retriever-ready chunk per element or per heading section, with id, page, bbox, hash, access and the heading path as metadata
-- [ ] `import fmjl` works as a Python library: `fmjl.load(path)`, `fmjl.chunks(rows)`, `fmjl.check(path)`
-- [ ] One working example: a folder of PDFs to FMJL to a vector store to a question answered with page citations
+- [x] `fmjl chunks report.fmjl`: one retriever-ready chunk per element or per heading section, with id, page, bbox, hash, access and the heading path as metadata; `--since old.fmjl` lists only what changed
+- [x] `import fmjl` works as a Python library: `fmjl.load(path)`, `fmjl.chunks(rows)`, `fmjl.changed_chunks(new, old)`, `fmjl.check(path)`
+- [x] One working example: `examples/rag_demo.py`, a folder of .fmjl files to chunks to a TF-IDF index to a question answered with page citations (Claude answers when a key is set)
 
 ---
 
 ## Stage 13: Rulebook 0.5
 
-- [ ] Every entry in `NOTES.md` resolved: in the rulebook first, then in `fmjl.py`, `converter.js` and `validator.js`
-- [ ] Rulebook section 17 says what changed and how to upgrade; `fmjl.py upgrade` handles 0.1 to 0.5
-- [ ] Rulebook regenerated with `fmjl new`; round trip still byte-identical; `npm test` passes
+- [x] Every entry in `NOTES.md` resolved: in the rulebook first, then in `fmjl.py`, `converter.js` and `validator.js` (three stay open by design: LaTeX from PDF, three-column pages, OCR untested; rulebook section 18)
+- [x] Rulebook section 17 says what changed and how to upgrade; `fmjl.py upgrade` handles 0.1 to 0.5
+- [x] Rulebook regenerated with `fmjl new`; round trip still byte-identical; `npm test` passes
 
 ---
 
@@ -181,7 +181,7 @@ npx @vscode/vsce publish
 
 - [ ] Python package on PyPI: `pip install fmjl` gives the `fmjl` command with the converter and both importers
 - [ ] `fmjl.exe` for Windows (PyInstaller) attached to the GitHub release, for people without Python
-- [ ] Extension published with the converter (0.5.0), then bumped with each rulebook change
+- [ ] Extension published with the converter (0.6.0, matches rulebook 0.5), then bumped with each rulebook change
 - [ ] README rewritten for a stranger: what FMJL is, install in one line, convert in one line, use in RAG in ten lines
 - [ ] GitHub: topics set, issue templates, a test workflow that runs `npm test` and the Python checks on every push
 - [ ] Benchmark re-run with the importers included; results in `README.md`
@@ -199,5 +199,6 @@ npx @vscode/vsce publish
 
 ## Where you are today (2026-09-29)
 
-Stages 1 to 9 are complete, and the extension converts both ways without Python (0.5.0, not yet published).
-Next is stage 10, the PDF importer. `NOTES.md` collects findings for stage 13.
+Stages 1 to 13 are complete: rulebook 0.5, the tool with ten commands, the PDF and Word importers,
+the retriever output and the extension 0.6.0 (built, not yet published).
+Next is stage 14, making it available to everyone. `NOTES.md` collects findings for rulebook 0.6.

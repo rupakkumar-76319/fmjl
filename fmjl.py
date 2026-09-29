@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fmjl.py - reference tool for FMJL (.fmjl), rulebook version 0.4.
+"""fmjl.py - reference tool for FMJL (.fmjl), rulebook version 0.5.
 
 One document, two forms:
   name.fmjl   storage form   one JSON object per line, for machines
@@ -19,12 +19,20 @@ Commands:
   python fmjl.py check notes.fmjl    check every rule, print errors with line numbers
   python fmjl.py view notes.fmjl     print the document as clean Markdown
   python fmjl.py info notes.fmjl     print title, element counts and an outline
-  python fmjl.py upgrade old.fmjl    turn a version 0.1 or 0.2 file into 0.3
+  python fmjl.py upgrade old.fmjl    turn a version 0.1 to 0.4 file into 0.5
   python fmjl.py pdf report.pdf      PDF -> report.fmjl, report.md and images/ (needs fmjl_pdf.py)
   python fmjl.py docx report.docx    Word -> report.fmjl, report.md and images/ (needs fmjl_docx.py)
+  python fmjl.py chunks notes.fmjl   retriever-ready chunks as JSON Lines (--by section, --since old.fmjl)
+
+As a library:
+  import fmjl
+  rows = fmjl.load("notes.fmjl")            header first, then one dict per element
+  for c in fmjl.chunks(rows): ...           id, text, page, bbox, hash, access, path
+  fmjl.changed_chunks(new, old)             only the chunks to embed again after an edit
+  fmjl.check("notes.fmjl")                  list of errors, empty when the file passes
 
 Needs Python 3.9+ and: pip install jsonschema
-The rulebook (fmjl_rulebook_v0.4.md) is the authority. If this tool and the
+The rulebook (fmjl_rulebook_v0.5.md) is the authority. If this tool and the
 rulebook disagree, this tool has a bug.
 
 Copyright (c) 2026 Rupak Kumar. MIT License, see LICENSE.
@@ -40,8 +48,8 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
-VERSION = "0.4"
-CONVERTER = "fmjl 0.4"
+VERSION = "0.5"
+CONVERTER = "fmjl 0.5"
 
 TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
          "footnote", "form_field", "annotation", "redaction", "noise", "message", "utterance",
@@ -76,7 +84,7 @@ LINK_RE = re.compile(r"\]\(#([a-z0-9_-]+)\)")
 
 SCHEMA = json.loads(r'''{
  "$schema": "https://json-schema.org/draft/2020-12/schema",
- "title": "FMJL line, version 0.4",
+ "title": "FMJL line, version 0.5",
  "oneOf": [
   {
    "$ref": "#/$defs/header"
@@ -659,23 +667,7 @@ class _TableParser(HTMLParser):
             self.cell.append(data)
 
     def grid(self):
-        grid, pending = [], {}
-        for r, row in enumerate(self.rows):
-            line, c, cells = [], 0, list(row)
-            while cells or (r, c) in pending:
-                if (r, c) in pending:
-                    line.append(pending.pop((r, c)))
-                    c += 1
-                    continue
-                text, (rs, cs) = cells.pop(0)
-                for dc in range(cs):
-                    line.append(text)
-                    for dr in range(1, rs):
-                        pending[(r + dr, c + dc)] = text
-                c += cs
-            grid.append(line)
-        width = max((len(l) for l in grid), default=0)
-        return [l + [""] * (width - len(l)) for l in grid]
+        return _span_grid(self.rows, False)
 
 
 def html_table_to_md(html):
@@ -687,6 +679,87 @@ def html_table_to_md(html):
     lines = [_pipe_row(grid[0]), _pipe_row(["---"] * len(grid[0]))]
     lines += [_pipe_row(r) for r in grid[1:]]
     return "\n".join(lines)
+
+
+def _html_escape(text):
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _span_grid(rows, markers):
+    """rows: lists of (text, (rowspan, colspan)). Returns a rectangular grid; a covered cell
+    holds the text again (markers=False, rulebook 8.6) or the marker ^ / < (markers=True)."""
+    grid, pending = [], {}
+    for r, row in enumerate(rows):
+        line, c, cells = [], 0, list(row)
+        while cells or (r, c) in pending:
+            if (r, c) in pending:
+                line.append(pending.pop((r, c)))
+                c += 1
+                continue
+            text, (rs, cs) = cells.pop(0)
+            for dc in range(cs):
+                line.append(text if not markers or dc == 0 else "<")
+                for dr in range(1, rs):
+                    pending[(r + dr, c + dc)] = "^" if markers else text
+            c += cs
+        grid.append(line)
+    width = max((len(l) for l in grid), default=0)
+    return [l + [""] * (width - len(l)) for l in grid]
+
+
+def shortcut_to_html(rows):
+    """rows: table cells without the separator row. A cell holding only ^ joins the cell above,
+    a cell holding only < joins the cell to its left (rulebook 9.2). Returns the canonical HTML
+    (rulebook 8.6), or None when no cell is joined."""
+    if not any(c in ("^", "<") for r in rows for c in r):
+        return None
+    width = max(len(r) for r in rows)
+    grid = [list(r) + [""] * (width - len(r)) for r in rows]
+    covered, lines = set(), ["<table>"]
+    for r, row in enumerate(grid):
+        cells = []
+        for c, text in enumerate(row):
+            if (r, c) in covered:
+                continue
+            if text in ("^", "<"):
+                raise ValueError(f"table row {r + 1}, column {c + 1}: '{text}' has no cell to join")
+            cs = 1
+            while c + cs < width and grid[r][c + cs] == "<":
+                cs += 1
+            rs = 1
+            while r + rs < len(grid) and grid[r + rs][c] == "^":
+                rs += 1
+            for dr in range(rs):
+                for dc in range(cs):
+                    if dr or dc:
+                        if grid[r + dr][c + dc] not in ("^", "<"):
+                            raise ValueError(f"table row {r + 1}, column {c + 1}: the joined cells do not form a rectangle")
+                        covered.add((r + dr, c + dc))
+            tag = "th" if r == 0 else "td"
+            attrs = (f' rowspan="{rs}"' if rs > 1 else "") + (f' colspan="{cs}"' if cs > 1 else "")
+            cells.append(f"<{tag}{attrs}>{_html_escape(text.replace(chr(92) + '|', '|'))}</{tag}>")
+        lines.append("<tr>" + "".join(cells) + "</tr>")
+    lines.append("</table>")
+    return "\n".join(lines)
+
+
+def html_to_shortcut(html):
+    """The shortcut rows for a canonical HTML table (the inverse of shortcut_to_html), or None
+    when the HTML was written by hand in another form."""
+    p = _TableParser()
+    p.feed(html)
+    if not p.rows or not any(rs > 1 or cs > 1 for row in p.rows for _, (rs, cs) in row):
+        return None
+    rows = _span_grid(p.rows, True)
+    try:
+        return rows if shortcut_to_html(rows) == html else None
+    except ValueError:
+        return None
+
+
+def shortcut_md(rows):
+    lines = [_pipe_row(rows[0]), _pipe_row(["---"] * len(rows[0]))]
+    return "\n".join(lines + [_pipe_row(r) for r in rows[1:]])
 
 
 def canonical_md(type_, md, latex=None, html=None):
@@ -1049,6 +1122,16 @@ def _make_element(block, attrs, doc):
     elif t == "table" and block.lstrip().lower().startswith("<table"):
         row["html"] = block.strip()
         md = html_table_to_md(row["html"])
+    elif t == "table" and detected == "table":
+        cells = [_split_row(ln) for ln in block.strip().split("\n")]
+        html = None
+        if len(cells) > 1 and all(SEP_CELL_RE.match(c) for c in cells[1]):
+            html = shortcut_to_html([cells[0]] + cells[2:])
+        if html:
+            row["html"] = html
+            md = html_table_to_md(html)
+        else:
+            md = block
     else:
         md = block
     row["md"] = md
@@ -1058,10 +1141,12 @@ def _make_element(block, attrs, doc):
     return row
 
 
-def import_md(text, doc=None, source=None, base=None):
-    """Authoring form -> filled storage rows (header first)."""
+def import_md(text, doc=None, source=None, base=None, warnings=None):
+    """Authoring form -> filled storage rows (header first). Advice that is not an error is
+    appended to `warnings` when a list is given."""
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     front, body = _split_front(text)
+    offset = text[:len(text) - len(body)].count("\n")
     h = {"type": "document"}
     for k, v in front.items():
         h["version" if k == "fmjl" else k] = v
@@ -1101,7 +1186,12 @@ def import_md(text, doc=None, source=None, base=None):
                 else:
                     pending = attrs
             continue
+        start = i
         block, i = _read_block(lines, i)
+        if warnings is not None and pending_group is None and not (pending or {}).get("type") \
+                and _detect(block) == "paragraph" and sum(1 for ln in block.split("\n") if "|" in ln) >= 2:
+            warnings.append(f"line {offset + start + 1}: this looks like a table typed without | at the "
+                            "start of each row or without the separator row (| --- |); it was read as a paragraph")
         if pending_group is not None:
             attrs, pending_group = pending_group, None
             row = _make_element(block, dict(attrs, type="group"), doc)
@@ -1131,22 +1221,27 @@ def import_md(text, doc=None, source=None, base=None):
     h["last_id"] = last
     labels = {e["label"]: e["id"] for e in els if isinstance(e.get("label"), str)}
 
-    def resolve(v):
+    def resolve(v, idx):
+        if v in ("above", "below"):
+            j = idx - 1 if v == "above" else idx + 1
+            if not 0 <= j < len(els):
+                raise ValueError(f"{els[idx]['id']}: there is no element {v} it")
+            return els[j]["id"]
         if isinstance(v, str) and not ID_RE.match(v) and v in labels:
             return labels[v]
         return v
 
-    for e in els:
+    for idx, e in enumerate(els):
         p = e.pop("_parent_row", None)
         if "parent" in e:
-            e["parent"] = resolve(e["parent"])
+            e["parent"] = resolve(e["parent"], idx)
         else:
             e["parent"] = p["id"] if p else None
         if "reference" in e:
             r = e["reference"]
-            e["reference"] = resolve(r) if isinstance(r, str) else [resolve(x) for x in r]
+            e["reference"] = resolve(r, idx) if isinstance(r, str) else [resolve(x, idx) for x in r]
         if "continues" in e:
-            e["continues"] = resolve(e["continues"])
+            e["continues"] = resolve(e["continues"], idx)
     return fill([h] + els, base=base)
 
 
@@ -1186,7 +1281,8 @@ def _render_block(e):
         latex = e["latex"] if isinstance(e.get("latex"), str) else _strip_dollars(e.get("md", ""))
         return "$$" + latex + "$$" if "\n" not in latex else "$$\n" + latex + "\n$$"
     if t == "table" and isinstance(e.get("html"), str) and e["html"]:
-        return e["html"]
+        rows = html_to_shortcut(e["html"])
+        return shortcut_md(rows) if rows else e["html"]
     return e.get("md", "")
 
 
@@ -1345,6 +1441,8 @@ def check_rows(numbered, base=None):
         if isinstance(lab, str) and LABEL_RE.match(lab):
             if lab in labels:
                 add(n, f"label {lab} is used twice")
+            if lab in ("above", "below"):
+                add(n, f"label {lab} is a reserved word in notes (rulebook 9.3)")
             labels[lab] = i
         if isinstance(e.get("reference"), list) and len(e["reference"]) == 1:
             add(n, "a single reference must be a string, not a list")
@@ -1364,7 +1462,7 @@ def check_rows(numbered, base=None):
                     add(n, f"level {e['level']} does not match the #'s in md")
         if isinstance(e.get("file"), str) and base is not None and t == "image":
             if not (Path(base) / e["file"]).is_file():
-                add(n, f"file {e['file']} does not exist next to the .fmjl file")
+                add(n, f"file {e['file']} does not exist next to the .fmjl file (copy the images/ folder there too)")
 
     for index, (n, e) in enumerate(els):
         if e.get("type") == "document":
@@ -1452,6 +1550,137 @@ def check(path):
     return errors
 
 
+EMBED_SKIP = ("noise", "toc", "redaction")
+ATTACH = ("caption", "footnote")
+
+
+def _joined_hash(members):
+    return hashlib.sha256("\n".join(m.get("hash", "") for m in members).encode()).hexdigest()[:16]
+
+
+def heading_path(rows):
+    """For every element id, the list of heading and group titles above it, top first."""
+    by_id = {e["id"]: e for e in rows[1:] if isinstance(e.get("id"), str)}
+    paths = {}
+
+    def title(e):
+        if e.get("type") == "heading":
+            return re.sub(r"^#{1,6}\s*", "", e.get("md", "")).strip()
+        return e.get("md", "").split("\n")[0].strip()
+
+    for e in rows[1:]:
+        path, p, steps = [], e.get("parent"), 0
+        while isinstance(p, str) and p in by_id and steps < 10000:
+            path.append(title(by_id[p]))
+            p = by_id[p].get("parent")
+            steps += 1
+        paths[e["id"]] = list(reversed(path))
+    return paths
+
+
+def _chunk_base(h, e, path):
+    c = {"id": e["id"], "doc": h.get("doc"), "type": e["type"]}
+    for k in ("page", "pages", "bbox", "file", "reference"):
+        if k in e:
+            c[k] = e[k]
+    c["hash"] = e.get("hash")
+    c["access"] = e.get("access", h.get("access", ["all"]))
+    c["path"] = path
+    if h.get("title"):
+        c["title"] = h["title"]
+    if h.get("source"):
+        c["source"] = h["source"]
+    return c
+
+
+def chunks(rows, by="element", max_chars=0):
+    """Retriever-ready chunks (rulebook 12.1). by="element": one per element, with its captions
+    and footnotes attached; by="section": one per heading and the elements under it, split when
+    longer than max_chars. Noise, toc and redaction elements are never included."""
+    h, els = rows[0], [e for e in rows[1:] if e.get("type") not in EMBED_SKIP]
+    paths = heading_path(rows)
+    ids = {e["id"] for e in els}
+    attached = {}
+    for e in els:
+        if e.get("type") in ATTACH and isinstance(e.get("reference"), str) and e["reference"] in ids:
+            attached.setdefault(e["reference"], []).append(e)
+    if by == "element":
+        out = []
+        for e in els:
+            if e.get("type") in ATTACH and isinstance(e.get("reference"), str) and e["reference"] in ids:
+                continue
+            c = _chunk_base(h, e, paths.get(e["id"], []))
+            members = [e] + attached.get(e["id"], [])
+            if len(members) > 1:
+                c["elements"] = [m["id"] for m in members]
+                c["hash"] = _joined_hash(members)
+            c["md"] = "\n\n".join(m.get("md", "") for m in members)
+            c["text"] = (" > ".join(c["path"]) + "\n\n" if c["path"] else "") + c["md"]
+            out.append(c)
+        return out
+    sections, current = [], None
+    for e in els:
+        is_head = e.get("type") == "heading"
+        only_heads = current is not None and current["head"] is not None \
+            and all(x.get("type") == "heading" for x in current["els"])
+        last_head = (current["els"] or [current["head"]])[-1] if only_heads else None
+        absorb = is_head and only_heads and (e.get("level") or 1) > (last_head.get("level") or 1)
+        if (is_head and not absorb) or current is None:
+            current = {"head": e if is_head else None, "els": []}
+            sections.append(current)
+        if current["head"] is not e:
+            current["els"].append(e)
+    out = []
+    for s in sections:
+        head = s["head"]
+        members = ([head] if head else []) + s["els"]
+        parts, size, part_no = [], 0, 0
+        groups = []
+        for e in members:
+            n = len(e.get("md", ""))
+            if parts and max_chars and size + n > max_chars:
+                groups.append(parts)
+                parts, size = [], 0
+            parts.append(e)
+            size += n
+        if parts:
+            groups.append(parts)
+        for i, grp in enumerate(groups):
+            anchor = head or grp[0]
+            c = _chunk_base(h, anchor, paths.get(anchor["id"], []))
+            c["id"] = anchor["id"] + (f"/{i + 1}" if len(groups) > 1 else "")
+            c["type"] = "section"
+            c["elements"] = [e["id"] for e in grp]
+            c["hash"] = _joined_hash(grp)
+            pages = sorted({p for e in grp for p in ([e["page"]] if "page" in e else e.get("pages", []))})
+            c.pop("page", None)
+            c.pop("pages", None)
+            c.pop("bbox", None)
+            if len(pages) == 1:
+                c["page"] = pages[0]
+            elif pages:
+                c["pages"] = [pages[0], pages[-1]]
+            c["md"] = "\n\n".join(e.get("md", "") for e in grp)
+            c["text"] = (" > ".join(c["path"]) + "\n\n" if c["path"] else "") + c["md"]
+            out.append(c)
+    return out
+
+
+def changed_chunks(new_chunks, old_chunks):
+    """The chunks of `new_chunks` that are new or whose hash differs from `old_chunks`;
+    these are the only ones to embed again after an edit."""
+    old = {c["id"]: c.get("hash") for c in old_chunks}
+    return [c for c in new_chunks if old.get(c["id"]) != c.get("hash")]
+
+
+def chunks_text(chunk_list):
+    return "".join(json.dumps(c, ensure_ascii=False, separators=(",", ":")) + "\n" for c in chunk_list)
+
+
+load = read_rows
+save = write_rows
+
+
 def view_text(rows):
     return "\n\n".join(_render_block(e) for e in rows[1:] if e.get("type") != "noise") + "\n"
 
@@ -1485,8 +1714,8 @@ def info_text(rows):
 def upgrade_rows(rows, base=None):
     h = rows[0]
     old = h.get("version")
-    if old not in (None, "0.1", "0.2", "0.3", "0.4"):
-        raise ValueError(f"cannot upgrade version {old}; this tool knows 0.1 to 0.4")
+    if old not in (None, "0.1", "0.2", "0.3", "0.4", "0.5"):
+        raise ValueError(f"cannot upgrade version {old}; this tool knows 0.1 to 0.5")
     h["version"] = VERSION
     if old != VERSION:
         h["converter"] = f"{h.get('converter', 'unknown')}; upgraded by {CONVERTER}"
@@ -1510,7 +1739,7 @@ def _report(errors):
     return 0
 
 
-COMMANDS = ("new", "md", "fill", "check", "view", "info", "upgrade", "pdf", "docx")
+COMMANDS = ("new", "md", "fill", "check", "view", "info", "upgrade", "pdf", "docx", "chunks")
 
 
 def _short_form(argv):
@@ -1545,15 +1774,20 @@ def main(argv=None):
                         ("check", "check every rule; print errors with line numbers"),
                         ("view", "print the document as clean Markdown"),
                         ("info", "print title, element counts and an outline"),
-                        ("upgrade", "turn a version 0.1, 0.2 or 0.3 file into version 0.4"),
+                        ("upgrade", "turn a version 0.1 to 0.4 file into version 0.5"),
                         ("pdf", "PDF -> storage form, authoring form and images/"),
-                        ("docx", "Word -> storage form, authoring form and images/")]:
+                        ("docx", "Word -> storage form, authoring form and images/"),
+                        ("chunks", "retriever-ready chunks as JSON Lines, one per element or section")]:
         p = sub.add_parser(name, help=help_)
         p.add_argument("file")
-        if name in ("new", "md", "upgrade", "pdf", "docx"):
+        if name in ("new", "md", "upgrade", "pdf", "docx", "chunks"):
             p.add_argument("-o", "--output", help="output file (default: same name, other extension)")
         if name in ("new", "pdf", "docx"):
             p.add_argument("--doc", help="document name when the front matter has none")
+        if name == "chunks":
+            p.add_argument("--by", choices=("element", "section"), default="element")
+            p.add_argument("--max-chars", type=int, default=0, help="split sections longer than this")
+            p.add_argument("--since", help="older .fmjl; print only chunks that changed since it")
     argv = _short_form(sys.argv[1:] if argv is None else list(argv))
     a = ap.parse_args(argv)
     path = Path(a.file)
@@ -1570,10 +1804,13 @@ def main(argv=None):
         if a.cmd == "new":
             text = path.read_text(encoding="utf-8")
             doc = a.doc or re.sub(r"[^a-z0-9_-]+", "_", path.stem.lower()).strip("_")
-            rows = import_md(text, doc=doc, source=path.name, base=path.parent)
+            warnings = []
+            rows = import_md(text, doc=doc, source=path.name, base=path.parent, warnings=warnings)
             out = _out(path, ".fmjl", a.output)
             write_rows(out, rows)
             print(f"wrote {out} ({len(rows) - 1} elements)")
+            for w in warnings:
+                print("warning: " + w)
             return _report(check(out))
         if a.cmd == "md":
             rows = read_rows(path)
@@ -1594,6 +1831,17 @@ def main(argv=None):
             return 0
         if a.cmd == "info":
             sys.stdout.write(info_text(read_rows(path)))
+            return 0
+        if a.cmd == "chunks":
+            out = chunks(read_rows(path), by=a.by, max_chars=a.max_chars)
+            if a.since:
+                out = changed_chunks(out, chunks(read_rows(a.since), by=a.by, max_chars=a.max_chars))
+            text = chunks_text(out)
+            if a.output:
+                Path(a.output).write_text(text, encoding="utf-8", newline="\n")
+                print(f"wrote {a.output} ({len(out)} chunks)")
+            else:
+                sys.stdout.write(text)
             return 0
         if a.cmd == "upgrade":
             rows, changed = upgrade_rows(read_rows(path), base=path.parent)

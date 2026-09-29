@@ -48,4 +48,4 @@ positions and permissions - built for RAG systems and search.
 Markdown alone cannot record an image's page, link a caption to its image, or say who may
 read a paragraph. JSON alone is unreadable for people. LaTeX alone is slow and hard to
 write. HTML alone is heavy. FMJL keeps the strength of each.
-See the rulebook: `rulebook/fmjl_rulebook_v0.4.md`.
+See the rulebook: `rulebook/fmjl_rulebook_v0.5.md`.

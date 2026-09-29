@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""fmjl_pdf.py - PDF importer for FMJL, rulebook version 0.4.
+"""fmjl_pdf.py - PDF importer for FMJL, rulebook version 0.5.
 
   fmjl report.pdf                    writes report.fmjl, report.md and images/
   python fmjl_pdf.py report.pdf [-o report.fmjl] [--doc name]
 
 What it does with a page:
   text blocks   headings (by font size), paragraphs, lists
-  tables        found by PyMuPDF, written as Markdown tables
+  tables        found by PyMuPDF; merged cells become an HTML table with rowspan and colspan
   images        saved as PNG into images/, captions linked with reference=
+  charts        drawn with lines and shapes are rendered to PNG as well
   noise         headers, footers and page numbers repeated across pages
 Every element gets page (from 0) and bbox (0..1000). Paragraphs that run over
 a page break are linked with continues=. Pages without a text layer need OCR;
@@ -131,6 +132,68 @@ def _join_lines(lines):
     return re.sub(r"[ \t]+", " ", out)
 
 
+def _table_cells(t):
+    """Cells of a PyMuPDF table as rows of (text, rowspan, colspan); covered cells are dropped."""
+    rows = t.extract()
+    boxes = [r.cells for r in t.rows]
+    out, covered = [], set()
+    for ri, row in enumerate(rows):
+        cells = []
+        for ci, text in enumerate(row):
+            if (ri, ci) in covered:
+                continue
+            box = boxes[ri][ci] if ci < len(boxes[ri]) else None
+            if text is None and box is None:
+                continue
+            rs = 1
+            if box is not None:
+                while ri + rs < len(boxes) and t.rows[ri + rs].bbox[3] <= box[3] + 1:
+                    rs += 1
+            cs = 1
+            while ci + cs < len(row) and row[ci + cs] is None and (ri, ci + cs) not in covered \
+                    and (ci + cs >= len(boxes[ri]) or boxes[ri][ci + cs] is None):
+                cs += 1
+            for dr in range(rs):
+                for dc in range(cs):
+                    covered.add((ri + dr, ci + dc))
+            cells.append((text or "", rs, cs))
+        out.append(cells)
+    return out
+
+
+def _drawings(page, tables):
+    """Vector charts and diagrams: clusters of lines and shapes that hold little text."""
+    out = []
+    try:
+        clusters = page.cluster_drawings()
+    except Exception:
+        return out
+    if not clusters:
+        return out
+    text_blocks = [(pymupdf.Rect(b[:4]), b[4].strip()) for b in page.get_text("blocks") if b[6] == 0]
+    drawings = page.get_drawings()
+    for rect in clusters:
+        rect = pymupdf.Rect(rect)
+        if rect.width < 40 or rect.height < 40:
+            continue
+        if any((t & rect).get_area() > 0.3 * min(t.get_area(), rect.get_area()) for t, _ in tables):
+            continue
+        inside = sum(len(txt) for r, txt in text_blocks if rect.contains(r))
+        shapes = sum(1 for d in drawings if rect.contains(d["rect"]))
+        if inside > 200 or shapes < 3:
+            continue
+        grown = pymupdf.Rect(rect)
+        for r, txt in text_blocks:
+            if len(txt) > 40 or CAPTION_RE.match(txt) or rect.contains(r):
+                continue
+            beside = r.y0 < rect.y1 and r.y1 > rect.y0 and (rect.x0 - 30 <= r.x1 <= rect.x0 + 15 or rect.x1 - 15 <= r.x0 <= rect.x1 + 30)
+            stacked = r.x0 < rect.x1 and r.x1 > rect.x0 and (rect.y0 - 30 <= r.y1 <= rect.y0 + 15 or rect.y1 - 15 <= r.y0 <= rect.y1 + 30)
+            if beside or stacked:
+                grown |= r
+        out.append(grown)
+    return out
+
+
 def _span_stats(block):
     sizes, bold, chars = Counter(), 0, 0
     for line in block["lines"]:
@@ -167,11 +230,14 @@ def _read_pages(doc, ocr):
             for t in page.find_tables().tables:
                 rows = t.extract()
                 if rows and any(any(c for c in r) for r in rows):
-                    tables.append((pymupdf.Rect(t.bbox), rows))
+                    tables.append((pymupdf.Rect(t.bbox), _table_cells(t)))
         except Exception:
             pass
         for rect, rows in tables:
             pg.items.append({"kind": "table", "rect": rect, "rows": rows})
+        charts = _drawings(page, tables) if not pg.no_text else []
+        for rect in charts:
+            pg.items.append({"kind": "drawing", "rect": rect})
         d = page.get_text("dict", textpage=textpage) if textpage else page.get_text("dict")
         image_blocks = sum(1 for b in d["blocks"] if b["type"] == 1)
         scan_tiles = image_blocks > MAX_SCAN_TILES and not pg.no_text
@@ -186,6 +252,8 @@ def _read_pages(doc, ocr):
                 pg.items.append({"kind": "image", "rect": rect, "bytes": b["image"], "digest": digest})
                 continue
             if any(t.contains(rect) or (t & rect).get_area() > 0.5 * rect.get_area() for t, _ in tables):
+                continue
+            if any(c.contains(rect) for c in charts):
                 continue
             lines = _block_text(b)
             if not lines:
@@ -287,12 +355,48 @@ def _text_element(it, body, levels):
     return {"type": "paragraph", "md": text}
 
 
-def _table_md(rows):
-    width = max(len(r) for r in rows)
-    grid = [[_cell(c) for c in r] + [""] * (width - len(r)) for r in rows]
+def _table_element(rows):
+    """rows: lists of (text, rowspan, colspan) from _table_cells, or plain text lists."""
+    cells = [[(c if isinstance(c, tuple) else (c, 1, 1)) for c in r] for r in rows]
+    if any(rs > 1 or cs > 1 for r in cells for _, rs, cs in r):
+        grid = fmjl._span_grid([[(_cell(t), (rs, cs)) for t, rs, cs in r] for r in cells], True)
+        html = fmjl.shortcut_to_html(grid)
+        return {"type": "table", "html": html, "md": fmjl.html_table_to_md(html)}
+    width = max(len(r) for r in cells)
+    grid = [[_cell(t) for t, _, _ in r] + [""] * (width - len(r)) for r in cells]
     lines = [fmjl._pipe_row(grid[0]), fmjl._pipe_row(["---"] * width)]
     lines += [fmjl._pipe_row(r) for r in grid[1:]]
-    return "\n".join(lines)
+    return {"type": "table", "md": "\n".join(lines)}
+
+
+def _fallback_headings(els):
+    """Scans and OCR text have no reliable font sizes (NOTES 11): short lines in capitals or
+    with a section number become headings."""
+    for e in els:
+        if e["type"] != "paragraph" or len(e["md"]) > 80 or "\n" in e["md"] or e["md"].endswith(HEADING_END):
+            continue
+        text = e["md"]
+        m = re.match(r"^(\d+(?:\.\d+)*)\.?\s+(\S.*)$", text)
+        letters = [c for c in text if c.isalpha()]
+        if m and m.group(2)[:1].isupper() and len(m.group(2).split()) <= 10:
+            level = min(6, m.group(1).count(".") + 1)
+        elif len(letters) >= 3 and all(c.isupper() for c in letters) and len(text.split()) <= 10:
+            level = 1
+        else:
+            continue
+        e["type"], e["level"], e["md"] = "heading", level, "#" * level + " " + text
+
+
+def _clamp_levels(els):
+    """A heading is at most one level deeper than the heading before it (rulebook 10.1)."""
+    prev = 0
+    for e in els:
+        if e["type"] != "heading":
+            continue
+        if e["level"] > prev + 1:
+            e["level"] = prev + 1
+            e["md"] = "#" * e["level"] + " " + re.sub(r"^#+\s*", "", e["md"])
+        prev = e["level"]
 
 
 def _save_image(data, path):
@@ -357,7 +461,11 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
                 if it.get("ocr"):
                     e["meta"] = {"ocr": True}
             elif it["kind"] == "table":
-                e = {"type": "table", "md": _table_md(it["rows"])}
+                e = _table_element(it["rows"])
+            elif it["kind"] == "drawing":
+                clip = pymupdf.Rect(it["rect"]) + (-4, -4, 4, 4)
+                pix = pdf[pg.number].get_pixmap(clip=clip & pdf[pg.number].rect, dpi=150)
+                e = {"type": "image", "subtype": "diagram", "md": "", "_pix": pix}
             else:
                 repeated = len(set(image_seen[it["digest"]])) >= max(3, int(len(pages) * 0.5))
                 if repeated:
@@ -376,11 +484,16 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
         for i, e in enumerate(page_els):
             if e["type"] != "caption":
                 continue
+            wants = "table" if e["md"].lower().startswith("table") else "image"
             target = None
-            for j in (i - 1, i + 1):
-                if 0 <= j < len(page_els) and page_els[j]["type"] in ("image", "table") \
-                        and _near(page_els[j]["_rect"], e["_rect"], 60):
-                    target = page_els[j]
+            for want in (wants, None):
+                for j in (i - 1, i + 1):
+                    if 0 <= j < len(page_els) and page_els[j]["type"] in ("image", "table") \
+                            and (want is None or page_els[j]["type"] == want) \
+                            and _near(page_els[j]["_rect"], e["_rect"], 60):
+                        target = page_els[j]
+                        break
+                if target is not None:
                     break
             if target is None:
                 e["type"] = "paragraph"
@@ -388,7 +501,13 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
             e["_target"] = target
             if target["type"] == "image" and not target["md"]:
                 target["md"] = e["md"]
+                if target.get("subtype") == "diagram" and re.search(r"chart|graph|plot", e["md"], re.I):
+                    target["subtype"] = "chart"
         els.extend(page_els)
+
+    if sum(1 for e in els if e["type"] == "heading") < 2 and len(pages) > 1:
+        _fallback_headings(els)
+    _clamp_levels(els)
 
     for n, e in enumerate(els, 1):
         e["id"] = f"{doc}#e{n}"
@@ -398,7 +517,10 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
         if e["type"] == "image":
             images_dir.mkdir(parents=True, exist_ok=True)
             name = f"images/{doc}_{e['id'].rsplit('#', 1)[1]}.png"
-            _save_image(e.pop("_bytes"), out_dir / name)
+            if "_pix" in e:
+                e.pop("_pix").save(str(out_dir / name))
+            else:
+                _save_image(e.pop("_bytes"), out_dir / name)
             e["file"] = name
             if not e["md"]:
                 e["md"] = f"Image on page {e['page'] + 1}"
@@ -416,7 +538,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
         prev = e
 
     meta = pdf.metadata or {}
-    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl_pdf 0.4"}
+    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl_pdf 0.5"}
     title = (meta.get("title") or "").strip()
     if not title:
         for e in els:

@@ -2,7 +2,7 @@
   "name": "fmjl",
   "displayName": "FMJL",
   "description": "FMJL (.fmjl) documents: convert Markdown to FMJL and back, syntax coloring and live error checking. JSON Lines container, Markdown text, LaTeX formulas, HTML tables - one element per line with id, hash, page and permissions.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "rupakkumar",
   "author": {
     "name": "Rupak Kumar"

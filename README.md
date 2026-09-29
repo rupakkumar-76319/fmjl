@@ -1,5 +1,5 @@
 ---
-fmjl: "0.4"
+fmjl: "0.5"
 doc: readme
 lang: en
 access: ["all"]
@@ -7,7 +7,7 @@ source: README.md
 sha256: 0afdb86ddae8de9cd5d5b8c778609ee6d35a3553b9fc143c1890856764b01045
 protection: none
 signed: false
-converter: fmjl 0.4
+converter: fmjl 0.5
 created: 2026-09-28T20:11:27Z
 last_id: 25
 ---
@@ -58,8 +58,8 @@ One document has two forms that hold the same information:
 fmjl.py          the reference tool (needs Python 3.9+ and: pip install jsonschema)
 fmjl_pdf.py      the PDF importer (needs: pip install pymupdf)
 fmjl_docx.py     the Word importer (needs nothing else)
-rulebook/        the specification, version 0.4, in both forms
-examples/        a sample document with its images/ folder
+rulebook/        the specification, version 0.5, in both forms
+examples/        sample documents (Markdown, PDF, Word) with their images/, and rag_demo.py
 fmjl-vscode/     the VS Code extension: convert, syntax coloring and live checking
 benchmark/       the same document in FMJL, Markdown, JSON and LaTeX, and the scores
 archive/         older versions (0.1, 0.2), the evaluation, and the first converter
@@ -104,9 +104,21 @@ without it, the page is reported and skipped. `examples/solar_report.pdf` is a s
 with its imported `.fmjl` and `.md`.
 
 A Word file already knows its structure, so the Word importer reads it directly: headings
-from the Heading styles, bullet and numbered lists, tables with merged cells written as
-HTML, images with captions, footnotes, the header and footer as `noise`, and page numbers
-from the page breaks Word recorded. `examples/maintenance_guide.docx` is a sample.
+from the Heading styles, bullet and numbered lists, tables with merged cells, images with
+captions, footnotes, Word formulas as LaTeX, the header and footer as `noise`, and page
+numbers from the page breaks Word recorded. `examples/maintenance_guide.docx` is a sample.
+
+Merged cells never need HTML by hand. In a Markdown table a cell holding only `^` joins
+the cell above it and a cell holding only `<` joins the cell to its left; the tool writes
+the HTML with `rowspan` and `colspan` for you, and shows the same shortcut when you
+convert back:
+
+```markdown
+| Name | Score | < |
+| --- | --- | --- |
+| ^ | Math | AI |
+| Rupak Kumar | 9 | 10 |
+```
 
 <!-- e14 -->
 All commands:
@@ -120,11 +132,40 @@ All commands:
 | `python fmjl.py check notes.fmjl` | Checks every rule of the rulebook |
 | `python fmjl.py view notes.fmjl` | Prints the document as clean Markdown |
 | `python fmjl.py info notes.fmjl` | Prints the title, element counts and an outline |
-| `python fmjl.py upgrade old.fmjl` | Turns a version 0.1, 0.2 or 0.3 file into 0.4 |
+| `python fmjl.py upgrade old.fmjl` | Turns a version 0.1 to 0.4 file into 0.5 |
 | `python fmjl.py pdf report.pdf` | PDF to storage form, authoring form and `images/` |
 | `python fmjl.py docx report.docx` | Word to storage form, authoring form and `images/` |
+| `python fmjl.py chunks report.fmjl` | Retriever-ready chunks as JSON Lines |
 
 <!-- e16 -->
+## In a RAG pipeline
+
+```powershell
+fmjl chunks report.fmjl                     # one chunk per element, as JSON Lines
+fmjl chunks report.fmjl --by section        # one chunk per heading and what is under it
+fmjl chunks new.fmjl --since old.fmjl       # only the chunks that changed: re-embed just those
+```
+
+Every chunk carries `id`, `text` (the headings above it, then the content), `page`, `bbox`,
+`hash`, `access` and `path`. Noise, tables of contents and redactions are never included.
+The same is available from Python:
+
+```python
+import fmjl
+rows = fmjl.load("report.fmjl")
+for c in fmjl.chunks(rows):
+    embed(c["text"], metadata={"id": c["id"], "page": c["page"], "access": c["access"]})
+```
+
+`examples/rag_demo.py` is the whole pipeline in one file with nothing to install: it loads
+every `.fmjl` in a folder, scores the chunks against a question, prints the best ones with
+their citation (document, page, element id), and, when the `anthropic` package and a key
+are present, asks Claude to answer from those chunks only:
+
+```powershell
+python examples\rag_demo.py "How much did electricity bills fall?"
+```
+
 ## What the benchmark shows
 
 <!-- e17 -->
@@ -158,7 +199,7 @@ document in this repository.
 ## Status
 
 <!-- e23 -->
-Draft, version 0.4. The rulebook is the authority; if `fmjl.py` and the rulebook
+Draft, version 0.5. The rulebook is the authority; if `fmjl.py` and the rulebook
 disagree, the tool has a bug.
 
 <!-- e24 -->

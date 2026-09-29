@@ -3,8 +3,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-const VERSION = "0.4";
-const CONVERTER = "fmjl 0.4";
+const VERSION = "0.5";
+const CONVERTER = "fmjl 0.5";
 
 const TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
   "footnote", "form_field", "annotation", "redaction", "noise", "message", "utterance",
@@ -166,7 +166,7 @@ function parseAttrs(s) {
   return out;
 }
 
-function tableGrid(html) {
+function tableRows(html) {
   const rows = [];
   let row = null;
   let cell = null;
@@ -200,6 +200,10 @@ function tableGrid(html) {
       cell.push(unescapeHtml(m[0]));
     }
   }
+  return rows;
+}
+
+function spanGrid(rows, markers) {
   const grid = [];
   const pending = new Map();
   rows.forEach((r, ri) => {
@@ -216,8 +220,8 @@ function tableGrid(html) {
       }
       const [text, [rs, cs]] = cells.shift();
       for (let dc = 0; dc < cs; dc++) {
-        line.push(text);
-        for (let dr = 1; dr < rs; dr++) pending.set((ri + dr) + "," + (c + dc), text);
+        line.push(!markers || dc === 0 ? text : "<");
+        for (let dr = 1; dr < rs; dr++) pending.set((ri + dr) + "," + (c + dc), markers ? "^" : text);
       }
       c += cs;
     }
@@ -225,6 +229,68 @@ function tableGrid(html) {
   });
   const width = grid.reduce((w, l) => Math.max(w, l.length), 0);
   return grid.map((l) => l.concat(new Array(width - l.length).fill("")));
+}
+
+function tableGrid(html) {
+  return spanGrid(tableRows(html), false);
+}
+
+function htmlEscape(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function shortcutToHtml(rows) {
+  if (!rows.some((r) => r.some((c) => c === "^" || c === "<"))) return null;
+  const width = rows.reduce((w, r) => Math.max(w, r.length), 0);
+  const grid = rows.map((r) => r.concat(new Array(width - r.length).fill("")));
+  const covered = new Set();
+  const lines = ["<table>"];
+  grid.forEach((row, r) => {
+    const cells = [];
+    row.forEach((text, c) => {
+      if (covered.has(r + "," + c)) return;
+      if (text === "^" || text === "<") {
+        throw new Error("table row " + (r + 1) + ", column " + (c + 1) + ": '" + text + "' has no cell to join");
+      }
+      let cs = 1;
+      while (c + cs < width && grid[r][c + cs] === "<") cs += 1;
+      let rs = 1;
+      while (r + rs < grid.length && grid[r + rs][c] === "^") rs += 1;
+      for (let dr = 0; dr < rs; dr++) {
+        for (let dc = 0; dc < cs; dc++) {
+          if (dr || dc) {
+            const v = grid[r + dr][c + dc];
+            if (v !== "^" && v !== "<") {
+              throw new Error("table row " + (r + 1) + ", column " + (c + 1) + ": the joined cells do not form a rectangle");
+            }
+            covered.add((r + dr) + "," + (c + dc));
+          }
+        }
+      }
+      const tag = r === 0 ? "th" : "td";
+      const attrs = (rs > 1 ? ' rowspan="' + rs + '"' : "") + (cs > 1 ? ' colspan="' + cs + '"' : "");
+      cells.push("<" + tag + attrs + ">" + htmlEscape(text.replace(/\\\|/g, "|")) + "</" + tag + ">");
+    });
+    lines.push("<tr>" + cells.join("") + "</tr>");
+  });
+  lines.push("</table>");
+  return lines.join("\n");
+}
+
+function htmlToShortcut(html) {
+  const rows = tableRows(html);
+  if (!rows.length || !rows.some((row) => row.some(([, [rs, cs]]) => rs > 1 || cs > 1))) return null;
+  const grid = spanGrid(rows, true);
+  try {
+    return shortcutToHtml(grid) === html ? grid : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function shortcutMd(rows) {
+  const lines = [pipeRow(rows[0]), pipeRow(new Array(rows[0].length).fill("---"))];
+  return lines.concat(rows.slice(1).map(pipeRow)).join("\n");
 }
 
 function htmlTableToMd(html) {
@@ -578,6 +644,16 @@ function makeElement(block, attrs, doc) {
   } else if (t === "table" && lstrip(block).toLowerCase().startsWith("<table")) {
     row.html = block.trim();
     md = htmlTableToMd(row.html);
+  } else if (t === "table" && detected === "table") {
+    const cells = block.trim().split("\n").map(splitRow);
+    let html = null;
+    if (cells.length > 1 && cells[1].every((c) => SEP_CELL_RE.test(c))) html = shortcutToHtml([cells[0]].concat(cells.slice(2)));
+    if (html) {
+      row.html = html;
+      md = htmlTableToMd(html);
+    } else {
+      md = block;
+    }
   } else {
     md = block;
   }
@@ -597,6 +673,8 @@ function importMd(text, opts) {
   opts = opts || {};
   text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const [front, body] = splitFront(text);
+  const offset = text.slice(0, text.length - body.length).split("\n").length - 1;
+  const warnings = Array.isArray(opts.warnings) ? opts.warnings : null;
   const h = { type: "document" };
   for (const k of Object.keys(front)) h[k === "fmjl" ? "version" : k] = front[k];
   const doc = h.doc || opts.doc;
@@ -641,8 +719,14 @@ function importMd(text, opts) {
       }
       continue;
     }
+    const start = i;
     const [block, next] = readBlock(lines, i);
     i = next;
+    if (warnings && pendingGroup === null && !(pending && pending.type) && detect(block) === "paragraph" &&
+        block.split("\n").filter((ln) => ln.includes("|")).length >= 2) {
+      warnings.push("line " + (offset + start + 1) + ": this looks like a table typed without | at the " +
+        "start of each row or without the separator row (| --- |); it was read as a paragraph");
+    }
     if (pendingGroup !== null) {
       const attrs = Object.assign({}, pendingGroup, { type: "group" });
       pendingGroup = null;
@@ -677,17 +761,24 @@ function importMd(text, opts) {
   h.last_id = last;
   const labels = {};
   for (const e of els) if (isStr(e.label)) labels[e.label] = e.id;
-  const resolve = (v) => (isStr(v) && !ID_RE.test(v) && v in labels ? labels[v] : v);
-  for (const e of els) {
+  const resolve = (v, idx) => {
+    if (v === "above" || v === "below") {
+      const j = v === "above" ? idx - 1 : idx + 1;
+      if (j < 0 || j >= els.length) throw new Error(els[idx].id + ": there is no element " + v + " it");
+      return els[j].id;
+    }
+    return isStr(v) && !ID_RE.test(v) && v in labels ? labels[v] : v;
+  };
+  els.forEach((e, idx) => {
     const p = e._parent_row;
     delete e._parent_row;
-    if ("parent" in e) e.parent = resolve(e.parent);
+    if ("parent" in e) e.parent = resolve(e.parent, idx);
     else e.parent = p ? p.id : null;
     if ("reference" in e) {
-      e.reference = isStr(e.reference) ? resolve(e.reference) : e.reference.map(resolve);
+      e.reference = isStr(e.reference) ? resolve(e.reference, idx) : e.reference.map((x) => resolve(x, idx));
     }
-    if ("continues" in e) e.continues = resolve(e.continues);
-  }
+    if ("continues" in e) e.continues = resolve(e.continues, idx);
+  });
   return fill([h].concat(els), undefined, opts.base);
 }
 
@@ -714,7 +805,10 @@ function renderBlock(e) {
     const latex = isStr(e.latex) ? e.latex : stripDollars(e.md || "");
     return latex.includes("\n") ? "$$\n" + latex + "\n$$" : "$$" + latex + "$$";
   }
-  if (t === "table" && isStr(e.html) && e.html) return e.html;
+  if (t === "table" && isStr(e.html) && e.html) {
+    const rows = htmlToShortcut(e.html);
+    return rows ? shortcutMd(rows) : e.html;
+  }
   return e.md || "";
 }
 
@@ -804,6 +898,6 @@ function docName(stem) {
 
 module.exports = {
   VERSION, CONVERTER, TYPES,
-  elementHash, dumps, readRows, writeRows, canonicalMd, htmlTableToMd,
+  elementHash, dumps, readRows, writeRows, canonicalMd, htmlTableToMd, shortcutToHtml, htmlToShortcut,
   fill, importMd, exportMd, docName,
 };

@@ -1,4 +1,9 @@
 # Changelog
+## 0.6.0
+- Matches rulebook version 0.5: merged cells can be typed in a Markdown table with `^` (join the cell above) and `<` (join the cell to the left); the converter writes the HTML and shows the shortcut again when converting back.
+- Notes accept `reference=above` and `reference=below`, so a caption can point at its picture without knowing the id.
+- A table typed without its separator row gives a warning instead of silently becoming a paragraph.
+- The missing-image message now says to copy the images/ folder.
 ## 0.5.0
 - New commands: FMJL: Convert Markdown to .fmjl and FMJL: Convert .fmjl to Markdown, also in the right-click menu of .md and .fmjl files. Pure JavaScript; no Python needed. Output is byte-identical to fmjl.py (test/roundtrip.js proves it).
 - The live checker now tests canonical Markdown and whether image files exist, so it covers every rule fmjl.py check covers.

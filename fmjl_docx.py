@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fmjl_docx.py - Word importer for FMJL, rulebook version 0.4.
+"""fmjl_docx.py - Word importer for FMJL, rulebook version 0.5.
 
   fmjl report.docx                   writes report.fmjl, report.md and images/
   python fmjl_docx.py report.docx [-o report.fmjl] [--doc name]
@@ -9,6 +9,7 @@ A .docx file already knows its structure, so the importer reads it directly:
   lists         from Word numbering; bullets and numbers are kept apart
   tables        merged cells become an HTML table with rowspan and colspan
   images        saved into images/, captions linked with reference=
+  formulas      Word math (OMML) becomes LaTeX: display math as a formula element, inline as $...$
   footnotes     one footnote element after the paragraph that cites it
   noise         the section header and footer
   page          from the page breaks Word recorded when it last saved the file
@@ -64,6 +65,128 @@ def _on(rpr, tag):
     if el is None:
         return False
     return el.get(_w("val"), "true") not in ("0", "false", "off")
+
+
+SYMBOLS = {
+    "\u2211": "\\sum", "\u220f": "\\prod", "\u222b": "\\int", "\u222c": "\\iint", "\u222e": "\\oint",
+    "\u00b1": "\\pm", "\u2213": "\\mp", "\u2264": "\\le", "\u2265": "\\ge", "\u2260": "\\ne",
+    "\u00d7": "\\times", "\u00f7": "\\div", "\u22c5": "\\cdot", "\u00b7": "\\cdot", "\u221e": "\\infty",
+    "\u2192": "\\to", "\u2190": "\\leftarrow", "\u21d2": "\\Rightarrow", "\u21d4": "\\Leftrightarrow",
+    "\u2212": "-", "\u2202": "\\partial", "\u2207": "\\nabla", "\u2208": "\\in", "\u2209": "\\notin",
+    "\u2282": "\\subset", "\u2286": "\\subseteq", "\u222a": "\\cup", "\u2229": "\\cap",
+    "\u2200": "\\forall", "\u2203": "\\exists", "\u2248": "\\approx", "\u2261": "\\equiv",
+    "\u223c": "\\sim", "\u221d": "\\propto", "\u2026": "\\ldots", "\u22ef": "\\cdots", "\u00b0": "^\\circ",
+    "\u2032": "'", "\u221a": "\\sqrt", "\u2205": "\\emptyset", "\u00ac": "\\neg", "\u2227": "\\wedge",
+    "\u2228": "\\vee", "\u2225": "\\parallel", "\u22a5": "\\perp", "\u2220": "\\angle", "\u210f": "\\hbar",
+    "{": "\\{", "}": "\\}", "%": "\\%", "&": "\\&", "#": "\\#", "_": "\\_",
+}
+GREEK = ("alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho "
+         "sigma tau upsilon phi chi psi omega").split()
+for _i, _name in enumerate(GREEK):
+    SYMBOLS[chr(0x3b1 + _i + (1 if _i >= 17 else 0))] = "\\" + _name
+    up = _name.capitalize()
+    if up in ("Gamma", "Delta", "Theta", "Lambda", "Xi", "Pi", "Sigma", "Upsilon", "Phi", "Psi", "Omega"):
+        SYMBOLS[chr(0x391 + _i + (1 if _i >= 17 else 0))] = "\\" + up
+SYMBOLS["\u03c2"] = "\\varsigma"
+
+
+def _latex_text(text):
+    out = []
+    for ch in text:
+        rep = SYMBOLS.get(ch)
+        if rep is None:
+            out.append(ch)
+        elif rep.startswith("\\") and rep[1:].isalpha():
+            out.append(rep + " ")
+        else:
+            out.append(rep)
+    return re.sub(r" +([^A-Za-z])", r"\1", "".join(out)).strip()
+
+
+def _m(tag):
+    return "{%s}%s" % (NS["m"], tag)
+
+
+def _omml(el):
+    """OMML (Word math) to LaTeX. Unknown parts fall back to the text of their runs."""
+    tag = el.tag
+    if tag == _m("t"):
+        return _latex_text(el.text or "")
+    if tag == _m("r"):
+        return "".join(_omml(c) for c in el if c.tag == _m("t"))
+    if tag == _m("f"):
+        return "\\frac{%s}{%s}" % (_omml_child(el, "num"), _omml_child(el, "den"))
+    if tag == _m("sSup"):
+        return "%s^{%s}" % (_omml_base(el), _omml_child(el, "sup"))
+    if tag == _m("sSub"):
+        return "%s_{%s}" % (_omml_base(el), _omml_child(el, "sub"))
+    if tag == _m("sSubSup"):
+        return "%s_{%s}^{%s}" % (_omml_base(el), _omml_child(el, "sub"), _omml_child(el, "sup"))
+    if tag == _m("sPre"):
+        return "{}_{%s}^{%s}%s" % (_omml_child(el, "sub"), _omml_child(el, "sup"), _omml_base(el))
+    if tag == _m("rad"):
+        deg = _omml_child(el, "deg")
+        return ("\\sqrt[%s]{%s}" % (deg, _omml_child(el, "e"))) if deg else "\\sqrt{%s}" % _omml_child(el, "e")
+    if tag == _m("d"):
+        pr = el.find("m:dPr", NS)
+        beg = _val_m(pr, "begChr", "(")
+        end = _val_m(pr, "endChr", ")")
+        sep = _val_m(pr, "sepChr", ",")
+        inner = sep.join(_omml(e) for e in el.findall("m:e", NS))
+        left = "\\left" + (_latex_text(beg) if beg else ".")
+        right = "\\right" + (_latex_text(end) if end else ".")
+        return "%s%s%s" % (left, inner, right)
+    if tag == _m("nary"):
+        pr = el.find("m:naryPr", NS)
+        op = _latex_text(_val_m(pr, "chr", "\u222b"))
+        sub, sup = _omml_child(el, "sub"), _omml_child(el, "sup")
+        return op + ("_{%s}" % sub if sub else "") + ("^{%s}" % sup if sup else "") + " " + _omml_child(el, "e")
+    if tag == _m("func"):
+        name = _omml_child(el, "fName")
+        return ("\\%s " % name if name.isalpha() else name) + _omml_child(el, "e")
+    if tag == _m("bar"):
+        return "\\overline{%s}" % _omml_child(el, "e")
+    if tag == _m("acc"):
+        ch = _val_m(el.find("m:accPr", NS), "chr", "\u0302")
+        names = {"\u0302": "hat", "\u0303": "tilde", "\u0307": "dot", "\u0308": "ddot", "\u0304": "bar",
+                 "\u20d7": "vec", "\u0306": "breve", "\u030c": "check"}
+        return "\\%s{%s}" % (names.get(ch, "hat"), _omml_child(el, "e"))
+    if tag == _m("limLow"):
+        return "%s_{%s}" % (_omml_child(el, "e"), _omml_child(el, "lim"))
+    if tag == _m("limUpp"):
+        return "%s^{%s}" % (_omml_child(el, "e"), _omml_child(el, "lim"))
+    if tag == _m("groupChr"):
+        return "\\underbrace{%s}" % _omml_child(el, "e")
+    if tag == _m("m"):
+        rows = [" & ".join(_omml(e) for e in mr.findall("m:e", NS)) for mr in el.findall("m:mr", NS)]
+        return "\\begin{matrix}%s\\end{matrix}" % " \\\\ ".join(rows)
+    if tag == _m("eqArr"):
+        return "\\begin{aligned}%s\\end{aligned}" % " \\\\ ".join(_omml(e) for e in el.findall("m:e", NS))
+    if tag in (_m("box"), _m("borderBox"), _m("phant"), _m("e"), _m("oMath"), _m("oMathPara"), _m("num"),
+               _m("den"), _m("sub"), _m("sup"), _m("deg"), _m("lim"), _m("fName")):
+        return "".join(_omml(c) for c in el if not c.tag.endswith("Pr"))
+    if tag.endswith("Pr") or tag == _m("ctrlPr"):
+        return ""
+    return "".join(_omml(c) for c in el)
+
+
+def _omml_child(el, name):
+    c = el.find("m:" + name, NS)
+    return _omml(c) if c is not None else ""
+
+
+def _omml_base(el):
+    base = _omml_child(el, "e")
+    return base if len(base) == 1 or base.startswith("\\") and base[1:].isalpha() else "{%s}" % base
+
+
+def _val_m(pr, name, default):
+    if pr is None:
+        return default
+    c = pr.find("m:" + name, NS)
+    if c is None:
+        return default
+    return c.get(_m("val"), default)
 
 
 class _Docx:
@@ -180,8 +303,10 @@ class _Docx:
             elif tag in (_w("del"), _w("moveFrom"), _w("proofErr"), _w("bookmarkStart"), _w("bookmarkEnd")):
                 continue
             elif tag in (_q("m", "oMath"), _q("m", "oMathPara")):
-                parts.append(" ".join(t.text or "" for t in child.iter(_q("m", "t"))).strip())
-                tokens.append(("math",))
+                latex = re.sub(r"\s+", " ", _omml(child)).strip()
+                if latex:
+                    parts.append("$" + latex + "$")
+                    tokens.append(("math", latex, tag == _q("m", "oMathPara")))
             else:
                 self._walk(child, parts, tokens, plain)
 
@@ -439,8 +564,11 @@ def import_docx(path, doc=None, out_dir=None):
             target = docx.image_target(rid)
             if target:
                 add({"type": "image", "md": alt, "_zip": target})
-        if any(t[0] == "math" for t in tokens):
-            docx.warnings.append("a formula was read as plain text (OMML to LaTeX is not done yet)")
+        maths = [t for t in tokens if t[0] == "math"]
+        if len(maths) == 1 and maths[0][2] and text == "$" + maths[0][1] + "$":
+            list_run = None
+            add({"type": "formula", "latex": maths[0][1], "md": "$$" + maths[0][1] + "$$"})
+            continue
         if not text:
             if not images:
                 list_run = None
@@ -491,10 +619,15 @@ def import_docx(path, doc=None, out_dir=None):
     for i, e in enumerate(els):
         if not e.pop("_caption", False):
             continue
+        wants = "table" if e["md"].lower().startswith("table") else "image"
+        order = (i + 1, i - 1) if wants == "table" else (i - 1, i + 1)
         target = None
-        for j in (i - 1, i + 1):
-            if 0 <= j < len(els) and els[j]["type"] in ("image", "table"):
-                target = els[j]
+        for want in (wants, None):
+            for j in order:
+                if 0 <= j < len(els) and els[j]["type"] in ("image", "table") and (want is None or els[j]["type"] == want):
+                    target = els[j]
+                    break
+            if target is not None:
                 break
         if target is None:
             e["type"] = "paragraph"
@@ -503,6 +636,14 @@ def import_docx(path, doc=None, out_dir=None):
             if target["type"] == "image" and re.match(r"^(picture|image|graphic|figure)?\s*\d*$", target["md"], re.I):
                 target["md"] = e["md"]
 
+    prev = 0
+    for e in els:
+        if e["type"] != "heading":
+            continue
+        if e["level"] > prev + 1:
+            e["level"] = prev + 1
+            e["md"] = "#" * e["level"] + " " + re.sub(r"^#+\s*", "", e["md"])
+        prev = e["level"]
     for n, e in enumerate(els, 1):
         e["id"] = f"{doc}#e{n}"
     keep = []
@@ -521,15 +662,21 @@ def import_docx(path, doc=None, out_dir=None):
                 e["md"] = "Image " + e["id"].rsplit("#e", 1)[1]
         keep.append(e)
 
-    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl_docx 0.4"}
+    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl_docx 0.5"}
     h.update(_meta(docx))
+    ins = sum(1 for _ in body.iter(_w("ins"))) + sum(1 for _ in body.iter(_w("moveTo")))
+    dels = sum(1 for _ in body.iter(_w("del"))) + sum(1 for _ in body.iter(_w("moveFrom")))
+    if ins or dels:
+        h["meta"] = {"fmjl.tracked_changes": {"insertions": ins, "deletions": dels}}
+        docx.warnings.append(f"tracked changes: {ins} insertion(s) kept and {dels} deletion(s) dropped; "
+                             "accept or reject the changes in Word to be sure")
     if "title" not in h:
         for e in keep:
             if e["type"] == "heading" and e["level"] == 1:
                 h["title"] = e["md"][2:]
                 break
     if pages_seen:
-        h["meta"] = {"pages": page + 1}
+        h.setdefault("meta", {})["pages"] = page + 1
     rows = fmjl.fill([h] + keep, base=path.parent)
     return rows, docx.warnings
 
