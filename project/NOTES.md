@@ -58,3 +58,18 @@ Run `python benchmark/quality.py some.pdf` on every new kind of PDF before trust
 19. A caption or footnote joins the chunk of the element it references (12.1).
 20. A heading with nothing under it joins the next section's chunk (12.1).
 21. What a chunk is: defined (12.1).
+
+## Search test (2026-10-04)
+
+18 questions about Persuasion, worded differently from the book, each with one answer sentence. A hit means the returned chunk holds the whole answer sentence. Embedding model `all-mpnet-base-v2`, no tuning; also checked with BM25 keyword search.
+
+| Chunks | Embedding top-1 | Embedding top-5 | BM25 top-5 |
+| --- | --- | --- | --- |
+| Plain PDF text, 1,000-character pieces | 2 | 9 | 8 |
+| Plain PDF text, 1,500-character pieces | 6 | 12 | 7 |
+| FMJL 1.0, by element | 0 | 3 | 3 |
+| FMJL 1.0, by section | 3 | 8 | 8 |
+| FMJL 1.1, by element | 6 | 9 | 5 |
+| FMJL 1.1, by section | 7 | 12 | 9 |
+
+1.1 is far better than 1.0 (top-5 from 8 to 12). Against plain text cut into 1,500-character pieces it is level on this novel: 12 against 12 at top-5, 7 against 6 at top-1. With 18 questions one question is 5.5 points, so the two are within noise. FMJL's advantage over plain pieces is not accuracy on running prose but what comes with each chunk: the page and position to cite, the chapter path, stable ids, and re-embedding only what changed. Still to test: documents with tables, headings and lists, where plain pieces cut through structure.

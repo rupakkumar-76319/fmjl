@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install jsonschema pymupdf markdown-it-py
+      - run: pip install jsonschema pymupdf markdown-it-py python-docx
       - name: Check every document in the repository
         run: |
           for f in examples/*.fmjl rulebook/*.fmjl README.fmjl; do
@@ -63,8 +63,27 @@ jobs:
                  {"md": "something else"}]
           pdf._resolve_hyphens(els)
           assert els[1]["md"] == "low self-esteem, something, goodlooking", els[1]["md"]
-          assert pdf._join_lines(["some­", "thing", "ex­tra"]) == "something extra"
+          assert pdf._join_lines(["some\u00ad", "thing", "ex\u00adtra"]) == "something extra"
           print("hyphen rule ok")
+          EOF
+      - name: Word features that are easy to lose (rulebook 10.1, rule 20)
+        run: |
+          python examples/sources/make_hard_docx.py /tmp/imp/hard.docx
+          python -m fmjl docx /tmp/imp/hard.docx -o /tmp/imp/hard.fmjl
+          python - <<'EOF'
+          import fmjl
+          rows = fmjl.load("/tmp/imp/hard.fmjl")
+          text = " ".join(e["md"] for e in rows[1:])
+          for kept in ("INSERTEDWORD", "e-mail", "information", "LINKTEXT", "SECONDLINE", "4 October 2026",
+                       "SDTPARAGRAPH", "SDTINLINE", "TEXTBOXCONTENT", "OUTERCELL", "INNERA", "AFTEREMPTY", "\u2713"):
+              assert kept in text, kept
+          for dropped in ("DELETEDWORD", "HIDDENTEXT", "MMMM yyyy"):
+              assert dropped not in text, dropped
+          assert text.count("TEXTBOXCONTENT") == 1
+          lists = [e["md"] for e in rows[1:] if e["type"] == "list"]
+          assert "  - LISTTWO" in lists[0] and "1. NUMONE" in lists[0], lists
+          assert any(e.get("html", "").count('colspan="2"') for e in rows[1:])
+          print("word features ok")
           EOF
       - name: Quality check of the PDF importer
         run: python benchmark/quality.py --strict examples/solar_report.pdf examples/sample_book.pdf

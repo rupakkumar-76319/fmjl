@@ -41,7 +41,10 @@ NS = {
     "dc": "http://purl.org/dc/elements/1.1/",
     "dcterms": "http://purl.org/dc/terms/",
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
+    "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
 }
+WORD_SYMBOLS = {"F0FC": "✓", "F0FB": "✗", "F0FE": "☒", "F0A8": "☐", "F06C": "●", "F0A7": "▪",
+           "F0B7": "•", "F0D8": "➢", "F0E0": "→", "F0E8": "→", "F0DF": "←"}
 IMAGE_EXT = {".png": "png", ".jpg": "jpg", ".jpeg": "jpeg", ".webp": "webp", ".svg": "svg"}
 CONVERTIBLE = {".gif", ".bmp", ".tif", ".tiff", ".pnm", ".jp2"}
 
@@ -310,8 +313,21 @@ class _Docx:
             else:
                 self._walk(child, parts, tokens, plain)
 
+    def _boxes(self, el):
+        """The text of the text boxes inside a drawing, each paragraph set off by spaces
+        (rulebook 10.1, rule 20)."""
+        out = []
+        for box in el.iter(_w("txbxContent")):
+            for p in box.iter(_w("p")):
+                text = self.para_md(p, plain=True)[0]
+                if text:
+                    out.append(text)
+        return (" " + " ".join(out) + " ") if out else ""
+
     def _run(self, r, parts, tokens, plain):
         rpr = r.find("w:rPr", NS)
+        if _on(rpr, "vanish"):
+            return
         bold, italic = (not plain) and _on(rpr, "b"), (not plain) and _on(rpr, "i")
         buf = []
         for child in r:
@@ -340,7 +356,15 @@ class _Docx:
                 for img in child.iter(_q("v", "imagedata")):
                     tokens.append(("image", img.get(_q("r", "id")), self._alt(child)))
             elif tag == _w("sym"):
-                buf.append("")
+                buf.append(WORD_SYMBOLS.get((child.get(_w("char")) or "").upper(), ""))
+            elif tag == _q("mc", "AlternateContent"):
+                choice = child.find("mc:Choice", NS)
+                if choice is None:
+                    choice = child.find("mc:Fallback", NS)
+                if choice is not None:
+                    buf.append(self._boxes(choice))
+            if tag in (_w("drawing"), _w("pict")):
+                buf.append(self._boxes(child))
         text = "".join(buf)
         if not text:
             return
@@ -447,18 +471,23 @@ def _list_info(docx, p, sid, style_names):
     numpr = ppr.find("w:numPr", NS) if ppr is not None else None
     if numpr is None:
         numpr = docx.style_numpr(sid)
+    depth = 0
+    for n in style_names:
+        m = re.match(r"^list (?:bullet|number|continue)\s*(\d)$", n)
+        if m:
+            depth = max(0, int(m.group(1)) - 1)
     if numpr is None:
         if any(n.startswith("list bullet") for n in style_names):
-            return 0, "bullet"
+            return depth, "bullet"
         if any(n.startswith("list number") for n in style_names):
-            return 0, "decimal"
+            return depth, "decimal"
         return None
     num_id = _val(numpr.find("w:numId", NS), "val")
     ilvl = int(_val(numpr.find("w:ilvl", NS), "val", "0") or 0)
     if num_id == "0" or num_id is None:
         return None
     fmt = docx.numbering.get(num_id, {}).get(ilvl, "bullet")
-    return ilvl, fmt
+    return max(ilvl, depth), fmt
 
 
 def _is_code(p, style_names):
@@ -584,10 +613,11 @@ def import_docx(path, doc=None, out_dir=None):
             if not (list_run is not None and els and els[-1] is list_run):
                 list_run = add({"type": "list", "md": "", "_counts": {}})
             counts = list_run["_counts"]
-            counts[ilvl] = counts.get(ilvl, 0) + 1
+            kind, n = counts.get(ilvl, (fmt, 0))
+            counts[ilvl] = (fmt, (n if kind == fmt else 0) + 1)
             for deeper in [k for k in counts if k > ilvl]:
                 del counts[deeper]
-            marker = "- " if fmt == "bullet" else f"{counts[ilvl]}. "
+            marker = "- " if fmt == "bullet" else f"{counts[ilvl][1]}. "
             list_run["md"] += ("\n" if list_run["md"] else "") + "  " * ilvl + marker + text
         elif any(n == "caption" for n in style_names):
             list_run = None
