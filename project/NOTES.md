@@ -25,7 +25,7 @@ Found by converting a 345-page scanned novel (Persuasion, Google Books scan) aft
 
 Then five more books were converted and screened with `benchmark/quality.py` before anyone used them. Problems it found:
 
-9. Real hyphens were dropped at line ends ("selfesteem", "wellbeing"): kept when the document writes the word with a hyphen (10.1, rule 12).
+9. Real hyphens were dropped at line ends ("selfesteem", "wellbeing"): kept when the document writes the word with a hyphen (10.1, rule 19). Word's non-breaking hyphens were dropped ("e-mail" became "email"): written as "-" (rule 19).
 10. Running headers that name the chapter repeat on fewer than 30% of pages and were missed (13 in one book): three pages are enough, and Roman page numbers are ignored (rule 11).
 11. A margin column of quotations was read across the body text: 229 of 496 pages came out in the wrong order and 2,359 paragraphs were cut. Sidebars are now their own stream (rule 16); wrong-order pages fell to 19.
 12. Drop caps were glued to the heading above ("The Demonic Rake I" and "n the early 1880s"): they rejoin their paragraph (rule 12).

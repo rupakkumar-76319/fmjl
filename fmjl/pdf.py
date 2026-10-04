@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """fmjl.pdf - PDF importer for FMJL, rulebook version 1.1.
 
-  fmjl report.pdf                    writes report.fmjl, report.md and images/
+  fmjl report.pdf                    writes report.fmjl and images/ (add --md for report.md too)
   fmjl pdf report.pdf [-o report.fmjl] [--doc name]
 
 What it does with a page:
@@ -28,6 +28,7 @@ import hashlib
 import re
 import shutil
 import sys
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
@@ -87,6 +88,59 @@ def _scanned(blocks, page_rect):
     page_area = _area(page_rect) or 1
     return any(b["type"] == 1 and _area(pymupdf.Rect(b["bbox"])) > 0.8 * page_area for b in blocks) \
         and any(b["type"] == 0 for b in blocks)
+
+
+def _script(ch):
+    name = unicodedata.name(ch, "")
+    return name.split(" ")[0] if name else ""
+
+
+def _scan_cleanup(items):
+    """On a scanned page: an image with text lying on it is part of the scan (a sharper copy of
+    the text area), not a picture; text without any letter or digit ("*", "—"), or a piece of at
+    most three characters in another script than the page, is what OCR read from an ornament
+    (rulebook 10.1, rule 15)."""
+    texts = [it for it in items if it["kind"] == "text"]
+    letters = Counter(_script(c) for it in texts for ln in it["lines"] for c in ln if c.isalpha())
+    main = letters.most_common(1)[0][0] if letters else ""
+    out = []
+    for it in items:
+        if it["kind"] == "image":
+            covered = sum(_area(t["rect"] & it["rect"]) for t in texts)
+            if covered >= 0.3 * (_area(it["rect"]) or 1):
+                continue
+        if it["kind"] == "text":
+            text = "".join(it["lines"]).strip()
+            if not any(c.isalnum() for c in text):
+                continue
+            if len(text) <= 3 and main and all(_script(c) != main for c in text if c.isalpha()) \
+                    and any(c.isalpha() for c in text):
+                continue
+        out.append(it)
+    return out
+
+
+def _gap_spaces(raw):
+    """Text of a scanned page from its characters: inside one span the letters of a word touch,
+    so a gap of at least 5% of the font size between two letters is a space the OCR layer left
+    out ("partof" is drawn as "part of") (rulebook 10.1, rule 15)."""
+    for b in raw["blocks"]:
+        for line in b.get("lines", []):
+            for s in line["spans"]:
+                chars = s.get("chars", [])
+                gaps = sorted(b["bbox"][0] - a["bbox"][2] for a, b in zip(chars, chars[1:])
+                              if a["c"].isalnum() and b["c"].isalnum())
+                usual = gaps[len(gaps) // 2] if gaps else 0
+                need = max(0.05 * (s["size"] or 10), usual + 0.05 * (s["size"] or 10), 3 * usual)
+                out, prev = [], None
+                for c in chars:
+                    if prev is not None and prev["c"].isalnum() and c["c"].isalnum() \
+                            and c["bbox"][0] - prev["bbox"][2] >= need:
+                        out.append(" ")
+                    out.append(c["c"])
+                    prev = c
+                s["text"] = "".join(out)
+    return raw
 
 
 def _join_spans(spans, spaced):
@@ -192,11 +246,13 @@ def _join_lines(lines):
         ln = ln.strip()
         if not out:
             out = ln
+        elif out.endswith("\u00ad"):
+            out = out[:-1] + ln
         elif out.endswith("-") and ln[:1].islower():
             out = out[:-1] + SOFT + ln
         else:
             out += " " + ln
-    return re.sub(r"[ \t]+", " ", out)
+    return re.sub(r"[ \t]+", " ", out).replace("\u00ad", "")
 
 
 def _table_cells(t):
@@ -310,6 +366,8 @@ def _read_pages(doc, ocr):
             pg.no_text, pg.blank = False, True
             continue
         spaced = _scanned(d["blocks"], page.rect)
+        if spaced:
+            d = _gap_spaces(page.get_text("rawdict", textpage=textpage) if textpage else page.get_text("rawdict"))
         image_blocks = sum(1 for b in d["blocks"] if b["type"] == 1)
         scan_tiles = image_blocks > MAX_SCAN_TILES and not pg.no_text
         for b in d["blocks"]:
@@ -332,7 +390,9 @@ def _read_pages(doc, ocr):
             size, bold, chars = _span_stats(b)
             pg.items.append({"kind": "text", "rect": rect, "lines": lines, "line_rects": rects, "size": size,
                              "bold": bold, "chars": chars, "ocr": textpage is not None, "cells": _cells(b)})
-        pg.items = _colon_lists(_attach_fragments(_drop_caps(_merge_text_tables(pg.items))))
+        if spaced:
+            pg.items = _scan_cleanup(pg.items)
+        pg.items = _colon_lists(_attach_fragments(_drop_caps(_merge_text_tables(pg.items)), spaced))
     return pages, image_seen
 
 
@@ -401,14 +461,14 @@ def _drop_caps(items):
     return [it for it in items if it["kind"] != "text" or it["lines"]]
 
 
-def _attach_fragments(items):
+def _attach_fragments(items, scanned=False):
     """Some text layers put the last word of a line in a block of its own. Such a word goes
     back into the line it stands beside instead of becoming a paragraph after the block."""
     texts = [it for it in items if it["kind"] == "text" and not it.get("cells")]
     out = []
     for it in items:
         if it["kind"] == "text" and not it.get("cells") and len(it["lines"]) == 1 \
-                and len(it["lines"][0].split()) <= 3 and _place_fragment(it, texts):
+                and len(it["lines"][0].split()) <= 3 and _place_fragment(it, texts, scanned):
             texts.remove(it)
             continue
         out.append(it)
@@ -439,27 +499,37 @@ def _same_size(a, b):
     return abs(a - b) <= max(0.5, 0.2 * max(a, b))
 
 
-def _place_fragment(frag, texts):
-    r, size = frag["rect"], frag["size"] or 10
+def _place_fragment(frag, texts, scanned=False):
+    """Puts a one-to-three-word block back into the line it stands beside: the line it overlaps
+    most, never after a line that already ends with a hyphen."""
+    r, best = frag["rect"], None
     for host in texts:
+        size = (max(frag["size"], host["size"]) if scanned else frag["size"]) or 10
         marker = MARKER_RE.match(frag["lines"][0].strip()) and frag["size"] < host["size"]
-        if host is frag or len(host["lines"]) < 2 or not (_same_size(host["size"], frag["size"]) or marker):
+        close = abs(host["size"] - frag["size"]) <= 0.3 * size if scanned else _same_size(host["size"], frag["size"])
+        if host is frag or len(host["lines"]) < 2 or not (close or marker):
             continue
         for i, lr in enumerate(host["line_rects"]):
             overlap = min(lr.y1, r.y1) - max(lr.y0, r.y0)
             if overlap < 0.5 * min(r.height, lr.height):
                 continue
-            if 0 <= r.x0 - lr.x1 <= 1.5 * size:
-                host["lines"][i] = host["lines"][i].rstrip() + " " + frag["lines"][0].strip()
+            if (-r.width if scanned else 0) <= r.x0 - lr.x1 <= 1.5 * size and r.x1 >= lr.x1 - 2                     and not host["lines"][i].rstrip().endswith("-"):
+                side = "end"
             elif 0 <= lr.x0 - r.x1 <= 1.5 * size:
-                host["lines"][i] = frag["lines"][0].strip() + " " + host["lines"][i].lstrip()
+                side = "start"
             else:
                 continue
-            host["line_rects"][i] = lr | r
-            host["rect"] = host["rect"] | r
-            host["chars"] += frag["chars"]
-            return True
-    return False
+            if best is None or overlap > best[0]:
+                best = (overlap, host, i, side)
+    if best is None:
+        return False
+    _, host, i, side = best
+    word, lr = frag["lines"][0].strip(), host["line_rects"][i]
+    host["lines"][i] = host["lines"][i].rstrip() + " " + word if side == "end" else word + " " + host["lines"][i].lstrip()
+    host["line_rects"][i] = lr | r
+    host["rect"] = host["rect"] | r
+    host["chars"] += frag["chars"]
+    return True
 
 
 def _full_last(it):
@@ -698,6 +768,26 @@ def _fallback_headings(els):
         e["type"], e["level"], e["md"] = "heading", level, "#" * level + " " + text
 
 
+def _lost_initials(els):
+    """A drop cap that is only a picture leaves the first word of a chapter without its first
+    letter ("IR WALTER" for "SIR WALTER"). When that word never occurs elsewhere in the document
+    and one capital letter in front of it makes a word the document uses often, clearly more
+    often than with any other letter, the letter is put back (rulebook 10.1, rule 12)."""
+    vocab = Counter(w.lower() for e in els for w in re.findall(r"[^\W\d_]+", e.get("md", "")))
+    for i, e in enumerate(els[:-1]):
+        nxt = els[i + 1]
+        if e["type"] != "heading" or nxt["type"] != "paragraph":
+            continue
+        m = re.match(r"([^\W\d_]+)", nxt["md"])
+        if not m or not m.group(1).isupper() or vocab[m.group(1).lower()] > 1:
+            continue
+        word = m.group(1)
+        counts = sorted(((vocab[(c + word).lower()], c) for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), reverse=True)
+        (best, letter), (second, _) = counts[0], counts[1]
+        if best >= 5 and best >= 3 * max(second, 1):
+            nxt["md"] = letter + nxt["md"]
+
+
 def _number_headings(els):
     """A chapter number printed on its own line above the title ("6", then "Anxiety") is one
     heading with the title: "6 Anxiety" (rulebook 10.1)."""
@@ -782,6 +872,10 @@ def _rejoin_tails(page_els, body):
                      and min(q["_rect"].x1, p["_rect"].x1) > max(q["_rect"].x0, p["_rect"].x0)), default=p["_rect"].x1)
         return p["_rect"].x1 >= right - 1.5 * (body or 10)
 
+    def column_left(p):
+        return min((q["_rect"].x0 for q in paras if q.get("_side") == p.get("_side")
+                    and min(q["_rect"].x1, p["_rect"].x1) > max(q["_rect"].x0, p["_rect"].x0)), default=p["_rect"].x0)
+
     out = []
     for e in page_els:
         r = e.get("_rect")
@@ -789,7 +883,7 @@ def _rejoin_tails(page_els, body):
         if e["type"] == "paragraph" and r is not None and e["md"][:1].islower():
             near = [p for p in out if p["type"] == "paragraph" and p.get("_side") == e.get("_side")
                     and not p["md"].rstrip().endswith(SENTENCE_END) and p["_rect"].y0 <= r.y0 <= p["_rect"].y1 + line
-                    and min(p["_rect"].x1, r.x1) - max(p["_rect"].x0, r.x0) >= 0.5 * min(p["_rect"].width, r.width)]
+                    and r.x0 < p["_rect"].x1 and r.x0 >= column_left(p) - 2 * (body or 10)]
             host = max(near, key=lambda p: p["_rect"].y1) if near else None
             if host is not None and not (runs_to_margin(host) or e.get("_side")):
                 host = None
@@ -802,6 +896,18 @@ def _rejoin_tails(page_els, body):
         host["bbox"] = _bbox(host["_rect"], host["_page_rect"])
         host["_full"] = e.get("_full")
     return out
+
+
+def _trailing_numbers(page_els):
+    """A number standing alone below all the text of its page, such as a printer's sheet mark
+    at the end of a chapter, is a page mark: noise, not a paragraph (rulebook 10.1, rule 11)."""
+    for e in page_els:
+        if e["type"] != "paragraph" or not re.fullmatch(r"\d{1,3}", e["md"].strip()) or e.get("_rect") is None:
+            continue
+        others = [o for o in page_els if o is not e and o["type"] != "noise" and o.get("_rect") is not None]
+        if others and all(o["_rect"].y1 <= e["_rect"].y0 + 2 for o in others):
+            e["type"], e["subtype"] = "noise", "page_number"
+    return page_els
 
 
 def _merge_lists(page_els):
@@ -866,7 +972,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
             e["_rect"] = pymupdf.Rect(it["rect"])
             e["_page_rect"] = pg.rect
             page_els.append(e)
-        page_els = _rejoin_tails(_merge_lists(page_els), body)
+        page_els = _trailing_numbers(_rejoin_tails(_merge_lists(page_els), body))
         for i, e in enumerate(page_els):
             if e["type"] != "caption":
                 continue
@@ -894,6 +1000,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
     _resolve_hyphens(els)
     _number_headings(els)
     start = _chapters(els)
+    _lost_initials(els)
     if sum(1 for e in els if e["type"] == "heading") < 2 and len(pages) > 1:
         _fallback_headings(els)
     _clamp_levels(els)
@@ -957,7 +1064,8 @@ def main(argv=None):
     ap.add_argument("file")
     ap.add_argument("-o", "--output", help="output .fmjl (default: same name next to the PDF)")
     ap.add_argument("--doc", help="document name (default: from the file name)")
-    ap.add_argument("--no-md", action="store_true", help="do not write the .md authoring form")
+    ap.add_argument("--md", action="store_true", help="also write the .md authoring form next to the .fmjl")
+    ap.add_argument("--no-md", action="store_true", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     path = Path(a.file)
     out = Path(a.output) if a.output else path.with_suffix(".fmjl")
@@ -968,7 +1076,7 @@ def main(argv=None):
         return 2
     fmjl.write_rows(out, rows)
     print(f"wrote {out} ({len(rows) - 1} elements from {rows[0]['meta']['pages']} pages)")
-    if not a.no_md:
+    if a.md and not a.no_md:
         md = out.with_suffix(".md")
         fmjl.write_text(md, fmjl.export_md(rows))
         print(f"wrote {md}")

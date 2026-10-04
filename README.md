@@ -45,7 +45,7 @@ install the **FMJL** extension (publisher rupakkumar): it converts and checks wi
 ```powershell
 fmjl notes.md               # Markdown  -> notes.fmjl, then checks every rule
 fmjl notes.fmjl             # .fmjl     -> notes.md; edit it and run the first line again
-fmjl report.pdf             # PDF       -> report.fmjl, report.md and images/
+fmjl report.pdf             # PDF       -> report.fmjl and images/ (--md adds report.md)
 fmjl report.docx            # Word      -> the same
 fmjl notes.md out\notes.fmjl    # a second name is the output file
 ```
@@ -145,8 +145,8 @@ imported `.fmjl` and `.md`.
 | `fmjl view notes.fmjl` | Prints the document as clean Markdown |
 | `fmjl info notes.fmjl` | Prints the title, element counts and an outline |
 | `fmjl upgrade old.fmjl` | Turns a version 0.1 to 1.0 file into 1.1 |
-| `fmjl pdf report.pdf` | PDF to storage form, authoring form and `images/` |
-| `fmjl docx report.docx` | Word to storage form, authoring form and `images/` |
+| `fmjl pdf report.pdf` | PDF to storage form and `images/`; `--md` also writes the authoring form |
+| `fmjl docx report.docx` | Word to storage form and `images/`; `--md` also writes the authoring form |
 | `fmjl chunks report.fmjl` | Retriever-ready chunks as JSON Lines; `--front` keeps a book's front matter |
 
 Without the package installed, `python -m fmjl <command>` from this folder does the same;
@@ -207,37 +207,29 @@ tool has a bug. From 1.0 on, every 1.x reader reads every 1.x file: later minor 
 only add optional fields, types or subtypes. The website is
 https://rupakkumar-76319.github.io/fmjl/
 
+## What 1.1 fixed
+
+After 1.0, a 345-page scanned novel (Jane Austen's *Persuasion*, a Google Books scan) was
+converted and its weak points were listed. Version 1.1 fixes them in the PDF importer and the
+chunker (rulebook 10.1, rules 11 to 19, and 12.1). The same book, converted by 1.0 and by 1.1:
+
+| | 1.0 | 1.1 |
+| --- | --- | --- |
+| Chapter headings | 5, all junk ("RESPONDET", "BookFund") | 24, CHAPTER I to XXIV |
+| Elements under one parent | 2,734 of 2,772 | 138 of 1,609 |
+| Paragraphs cut mid-sentence on a page | 1,198 | 45 |
+| Median paragraph length | 144 characters | 286 characters |
+| Running headers read as text | 104 | 0 in the story |
+| Paragraphs over a page break linked | 157 | 234 of 241 |
+| Front matter (library stamps, Google notice) | mixed into the text | marked; `fmjl chunks` skips it |
+| First words of Chapter I | "IR WALTER ELLIOT" | "SIR WALTER ELLIOT" |
+
+Five more books were checked with `python benchmark/quality.py`, which compares any PDF with
+its conversion; it found and fixed margin quotes read across the text, lost hyphens, missed
+chapter headers and drop caps. Run it on a new kind of PDF before trusting the conversion.
+
 ## Author and license
 
 Created by Rupak Kumar. Released under the MIT License (see `LICENSE`): use it freely,
 keep the copyright line. Suggestions and bug reports go to
 https://github.com/rupakkumar-76319/fmjl/issues.
-
-
-
-## DrawBack of the format
-Word-order slips: About 19 pages have a few words out of place. Some run-together words ("shehad") also appear.
-Weak structure: Only 5 elements are typed as headings. Chapters are plain paragraphs starting with "CHAPTER I.".
-No picture content: Images are just placeholders. The image files weren't in your upload.
-Front-matter junk: Pages 1-15 hold library stamps and Google notices, and some are typed as headings (e.g. "RESPONDET").
-Page numbering: The .fmjl counts pages from 0, but the PDF counts from 1, and the book prints its own page numbers. Citations can be off by one if you don't convert.
-Custom parsing needed: It is a JSON-lines file with a header line, so you need a small custom loader.
-
-## How it gets in the way of splitting
-
-Elements are tied to a single page.
-On 241 of the 319 body pages I checked, the last paragraph stops mid-sentence. The sentence continues as a separate element on the next page.
-Split by element or by page and you get chunks that start or end mid-sentence.
-This is inferred from those counts, not checked one by one.
-Noise sits between the two halves. Running headers like "PERSUASION. 101" are stored exactly at the page break. A simple "join with the next element" step fails unless you remove noise first. My own first test found zero cut paragraphs for this reason.
-The hierarchy is flat. 2,734 of 2,772 elements share one parent, the title heading. Chapters are not parent nodes, so section-based chunking does not work out of the box.
-Paragraphs are too small. Median 144 characters, and 325 under 40 characters (mostly dialogue). One chunk per paragraph gives weak embeddings, so you have to merge them.
-Front matter pollutes early chunks. The text before chapter 1 (page 16) is junk and should be dropped.
-
-Suggested order for your pipeline:
-
-Drop noise and image elements and everything before chapter 1.
-Join a paragraph that ends mid-sentence with the next paragraph if that one starts lowercase.
-Mark chapters with a "CHAPTER" pattern.
-Merge paragraphs to your target chunk size, within each chapter.
-Store the page numbers, converted to your chosen numbering.

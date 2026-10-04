@@ -10,3 +10,6 @@ dist/
 .env
 project/HISTORY.fmjl
 project/HISTORY.md
+examples/Persuasion.*
+examples/images/persuasion_*
+*_chunks.jsonl

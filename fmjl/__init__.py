@@ -1843,6 +1843,8 @@ def main(argv=None):
             p.add_argument("-o", "--output", help="output file (default: same name, other extension)")
         if name in ("new", "pdf", "docx"):
             p.add_argument("--doc", help="document name when the front matter has none")
+        if name in ("pdf", "docx"):
+            p.add_argument("--md", action="store_true", help="also write the .md authoring form")
         if name == "chunks":
             p.add_argument("--by", choices=("element", "section"), default="element")
             p.add_argument("--max-chars", type=int, default=0, help="split sections longer than this")
@@ -1860,7 +1862,7 @@ def main(argv=None):
             need = 'pip install pymupdf (or: pip install "fmjl[pdf]")' if a.cmd == "pdf" else "the fmjl package"
             print(f"error: the {a.cmd} importer needs {need} ({e})")
             return 2
-        args = [str(path)] + (["-o", a.output] if a.output else []) + (["--doc", a.doc] if a.doc else [])
+        args = [str(path)] + (["-o", a.output] if a.output else []) + (["--doc", a.doc] if a.doc else []) + (["--md"] if a.md else [])
         return importer.main(args)
     try:
         if a.cmd == "new":

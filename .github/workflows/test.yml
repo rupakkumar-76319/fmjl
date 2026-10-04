@@ -53,6 +53,19 @@ jobs:
           assert items and items[0].count("\n- ") == 3, "a list without bullets was run together"
           print("book rules ok")
           EOF
+      - name: Hyphen rule (rulebook 10.1, rule 19)
+        run: |
+          python - <<'EOF'
+          from fmjl import pdf
+          S = pdf.SOFT
+          els = [{"md": "Her self-esteem was high."},
+                 {"md": f"low self{S}esteem, some{S}thing, good{S}looking"},
+                 {"md": "something else"}]
+          pdf._resolve_hyphens(els)
+          assert els[1]["md"] == "low self-esteem, something, goodlooking", els[1]["md"]
+          assert pdf._join_lines(["some­", "thing", "ex­tra"]) == "something extra"
+          print("hyphen rule ok")
+          EOF
       - name: Quality check of the PDF importer
         run: python benchmark/quality.py --strict examples/solar_report.pdf examples/sample_book.pdf
       - name: Build the docs site

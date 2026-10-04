@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """fmjl.docx - Word importer for FMJL, rulebook version 1.1.
 
-  fmjl report.docx                   writes report.fmjl, report.md and images/
+  fmjl report.docx                   writes report.fmjl and images/ (add --md for report.md too)
   fmjl docx report.docx [-o report.fmjl] [--doc name]
 
 A .docx file already knows its structure, so the importer reads it directly:
@@ -317,7 +317,9 @@ class _Docx:
         for child in r:
             tag = child.tag
             if tag == _w("t"):
-                buf.append(child.text or "")
+                buf.append((child.text or "").replace("\u00ad", ""))
+            elif tag == _w("noBreakHyphen"):
+                buf.append("-")
             elif tag == _w("tab"):
                 buf.append(" ")
             elif tag == _w("br"):
@@ -687,7 +689,8 @@ def main(argv=None):
     ap.add_argument("file")
     ap.add_argument("-o", "--output", help="output .fmjl (default: same name next to the .docx)")
     ap.add_argument("--doc", help="document name (default: from the file name)")
-    ap.add_argument("--no-md", action="store_true", help="do not write the .md authoring form")
+    ap.add_argument("--md", action="store_true", help="also write the .md authoring form next to the .fmjl")
+    ap.add_argument("--no-md", action="store_true", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     path = Path(a.file)
     out = Path(a.output) if a.output else path.with_suffix(".fmjl")
@@ -698,7 +701,7 @@ def main(argv=None):
         return 2
     fmjl.write_rows(out, rows)
     print(f"wrote {out} ({len(rows) - 1} elements)")
-    if not a.no_md:
+    if a.md and not a.no_md:
         md = out.with_suffix(".md")
         fmjl.write_text(md, fmjl.export_md(rows))
         print(f"wrote {md}")
