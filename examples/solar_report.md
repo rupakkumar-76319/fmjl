@@ -1,5 +1,5 @@
 ---
-fmjl: "1.0"
+fmjl: "1.1"
 doc: solar_report
 title: Solar Schools Programme Annual Report 2026
 authors: Rupak Kumar
@@ -10,8 +10,8 @@ source: solar_report.pdf
 sha256: edfd89daee9a584a8f0cda053f0d547f79e757a290840ed87ddf28d91a45d8b4
 protection: none
 signed: false
-converter: fmjl pdf 1.0
-created: 2026-09-29T14:17:44Z
+converter: fmjl pdf 1.1
+created: 2026-10-03T20:05:52Z
 last_id: 25
 meta: {"pages": 3}
 ---

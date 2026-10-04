@@ -16,7 +16,21 @@ merged cells.
   `characters` values, non-canonical Markdown, missing image files, duplicate ids and
   labels, broken `parent` / `reference` / `continues` links, dead `[text](#label)` links,
   page and bbox rules, and header rules.
-- Command **FMJL: Check current file** for a clear PASSED / FAILED answer.
+- **One-click fixes.** Problems such as a wrong `hash`, a wrong `characters` count, a missing
+  field or non-canonical Markdown show a light bulb: **Fix with FMJL: Fill**. The same command,
+  **FMJL: Fill**, is in the right-click menu. It works like `fmjl fill`: existing ids never change,
+  new elements get the next free id.
+- **Outline and breadcrumbs.** Headings, groups, tables, images, formulas and code appear in the
+  Outline view, nested by `parent`, with the page shown as people count it (page 0 is page 1).
+- **Hover** over an element line to read its Markdown rendered, instead of the escaped JSON
+  string. Hover over an id in `parent`, `reference` or `continues` to see the element it points to.
+- **Go to Definition** (F12) on an id jumps to that element; **Find All References** (Shift+F12)
+  lists its children and everything that references it.
+- Command **FMJL: Check current file** for a clear PASSED / FAILED answer. The live checker
+  reports the same problems as `fmjl check`, including `\r\n` line endings, a byte-order mark
+  and a missing newline at the end; `test/checker.js` proves it.
+- Converting asks first before it would lose work: when a `.md` without id notes would replace
+  an existing `.fmjl` (every id would change), or when the `.md` was edited after the `.fmjl`.
 
 ## How to use it
 1. Write a normal Markdown file, for example `notes.md`. Put images in an `images/` folder
@@ -28,8 +42,7 @@ merged cells.
 
 ## Notes
 - The converter is pure JavaScript and needs no Python. Its output is byte-identical to the
-  reference Python package `fmjl`; the test in `test/roundtrip.js` checks that on every document
-  in the repository.
+  reference Python package `fmjl`; `npm test` checks that on every document in the repository.
 - The rulebook is the authority. If this extension and the rulebook disagree, the
   extension has a bug: https://github.com/rupakkumar-76319/fmjl/issues
 
@@ -48,4 +61,4 @@ positions and permissions - built for RAG systems and search.
 Markdown alone cannot record an image's page, link a caption to its image, or say who may
 read a paragraph. JSON alone is unreadable for people. LaTeX alone is slow and hard to
 write. HTML alone is heavy. FMJL keeps the strength of each.
-See the rulebook: `rulebook/fmjl_rulebook_v1.0.md`, or read it at https://rupakkumar-76319.github.io/fmjl/rulebook.html
+See the rulebook: `rulebook/fmjl_rulebook_v1.1.md`, or read it at https://rupakkumar-76319.github.io/fmjl/rulebook.html

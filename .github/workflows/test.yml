@@ -23,11 +23,11 @@ jobs:
           done
       - name: Round trip the rulebook
         run: |
-          python -m fmjl md rulebook/fmjl_rulebook_v1.0.fmjl -o /tmp/rb.md
+          python -m fmjl md rulebook/fmjl_rulebook_v1.1.fmjl -o /tmp/rb.md
           python -m fmjl new /tmp/rb.md -o /tmp/rb.fmjl --doc fmjl_rulebook
           python - <<'EOF'
           import json
-          a = [json.loads(l) for l in open("rulebook/fmjl_rulebook_v1.0.fmjl", encoding="utf-8")]
+          a = [json.loads(l) for l in open("rulebook/fmjl_rulebook_v1.1.fmjl", encoding="utf-8")]
           b = [json.loads(l) for l in open("/tmp/rb.fmjl", encoding="utf-8")]
           assert a[1:] == b[1:], "elements changed in the round trip"
           print("round trip ok:", len(a) - 1, "elements")
@@ -38,6 +38,23 @@ jobs:
           python -m fmjl pdf examples/solar_report.pdf -o /tmp/imp/solar_report.fmjl
           python -m fmjl docx examples/maintenance_guide.docx -o /tmp/imp/maintenance_guide.fmjl
           python -m fmjl chunks /tmp/imp/solar_report.fmjl --by section | head -c 300
+          python -m fmjl pdf examples/sample_book.pdf -o /tmp/imp/sample_book.fmjl
+          python - <<'EOF'
+          import fmjl
+          rows = fmjl.load("/tmp/imp/sample_book.fmjl")
+          heads = [e["md"] for e in rows[1:] if e["type"] == "heading"]
+          assert heads == ["# CHAPTER I.", "# CHAPTER II.", "# CHAPTER III."], heads
+          assert rows[0]["meta"]["fmjl.body"] == next(e["id"] for e in rows[1:] if e["type"] == "heading")
+          assert sum("continues" in e for e in rows[1:]) == 3
+          assert not any(e["type"] == "paragraph" and "LIGHTHOUSE KEEPER." in e["md"] for e in rows[1:])
+          joined = [c for c in fmjl.chunks(rows) if "pages" in c]
+          assert len(joined) == 3 and all(len(c["elements"]) == 2 for c in joined)
+          items = [e["md"] for e in rows[1:] if e["type"] == "list" and "trimming the wick" in e["md"]]
+          assert items and items[0].count("\n- ") == 3, "a list without bullets was run together"
+          print("book rules ok")
+          EOF
+      - name: Quality check of the PDF importer
+        run: python benchmark/quality.py --strict examples/solar_report.pdf examples/sample_book.pdf
       - name: Build the docs site
         run: python docs/build.py
       - name: Build the package

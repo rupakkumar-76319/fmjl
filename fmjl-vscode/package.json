@@ -1,8 +1,8 @@
 {
   "name": "fmjl",
   "displayName": "FMJL",
-  "description": "FMJL (.fmjl) documents: convert Markdown to FMJL and back, syntax coloring and live error checking. JSON Lines container, Markdown text, LaTeX formulas, HTML tables - one element per line with id, hash, page and permissions.",
-  "version": "1.0.0",
+  "description": "FMJL (.fmjl) documents: convert Markdown to FMJL and back, live error checking with one-click fixes, an outline of headings, hovers and go-to-definition for element ids. JSON Lines container, Markdown text, LaTeX formulas, HTML tables.",
+  "version": "1.1.0",
   "publisher": "rupakkumar",
   "author": {
     "name": "Rupak Kumar"
@@ -57,6 +57,10 @@
         "title": "FMJL: Check current file"
       },
       {
+        "command": "fmjl.fill",
+        "title": "FMJL: Fill (fix hashes, counts and missing fields)"
+      },
+      {
         "command": "fmjl.toFmjl",
         "title": "FMJL: Convert Markdown to .fmjl"
       },
@@ -88,11 +92,26 @@
           "command": "fmjl.toMd",
           "when": "resourceLangId == fmjl",
           "group": "fmjl@1"
+        },
+        {
+          "command": "fmjl.fill",
+          "when": "resourceLangId == fmjl",
+          "group": "fmjl@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "fmjl.check",
+          "when": "editorLangId == fmjl"
+        },
+        {
+          "command": "fmjl.fill",
+          "when": "editorLangId == fmjl"
         }
       ]
     }
   },
   "scripts": {
-    "test": "node test/roundtrip.js"
+    "test": "node test/roundtrip.js && node test/checker.js"
   }
 }

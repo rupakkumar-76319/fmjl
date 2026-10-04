@@ -1,5 +1,5 @@
 ---
-fmjl: "1.0"
+fmjl: "1.1"
 doc: readme
 lang: en
 access: ["all"]
@@ -144,10 +144,10 @@ imported `.fmjl` and `.md`.
 | `fmjl check notes.fmjl` | Checks every rule of the rulebook |
 | `fmjl view notes.fmjl` | Prints the document as clean Markdown |
 | `fmjl info notes.fmjl` | Prints the title, element counts and an outline |
-| `fmjl upgrade old.fmjl` | Turns a version 0.1 to 0.5 file into 1.0 |
+| `fmjl upgrade old.fmjl` | Turns a version 0.1 to 1.0 file into 1.1 |
 | `fmjl pdf report.pdf` | PDF to storage form, authoring form and `images/` |
 | `fmjl docx report.docx` | Word to storage form, authoring form and `images/` |
-| `fmjl chunks report.fmjl` | Retriever-ready chunks as JSON Lines |
+| `fmjl chunks report.fmjl` | Retriever-ready chunks as JSON Lines; `--front` keeps a book's front matter |
 
 Without the package installed, `python -m fmjl <command>` from this folder does the same;
 `fmjl.cmd` here is the one-word shortcut for Windows.
@@ -191,7 +191,7 @@ proves the two give byte-identical output on every document in this repository.
 ```text
 fmjl/            the Python package: the converter and checker, the PDF and Word importers, chunks
 pyproject.toml   the PyPI package: pip install fmjl
-rulebook/        the specification, version 1.0, in both forms
+rulebook/        the specification, version 1.1, in both forms
 docs/            the website, https://rupakkumar-76319.github.io/fmjl/ : introduction and rulebook
 examples/        sample documents (Markdown, PDF, Word) with their images/, rag_demo.py, and the sample generators
 fmjl-vscode/     the VS Code extension: convert, syntax coloring and live checking
@@ -202,7 +202,7 @@ archive/         older versions of the rulebook and the extension
 
 ## Status
 
-Version 1.0. The rulebook is the authority; if the tool and the rulebook disagree, the
+Version 1.1. The rulebook is the authority; if the tool and the rulebook disagree, the
 tool has a bug. From 1.0 on, every 1.x reader reads every 1.x file: later minor versions
 only add optional fields, types or subtypes. The website is
 https://rupakkumar-76319.github.io/fmjl/
@@ -212,3 +212,32 @@ https://rupakkumar-76319.github.io/fmjl/
 Created by Rupak Kumar. Released under the MIT License (see `LICENSE`): use it freely,
 keep the copyright line. Suggestions and bug reports go to
 https://github.com/rupakkumar-76319/fmjl/issues.
+
+
+
+## DrawBack of the format
+Word-order slips: About 19 pages have a few words out of place. Some run-together words ("shehad") also appear.
+Weak structure: Only 5 elements are typed as headings. Chapters are plain paragraphs starting with "CHAPTER I.".
+No picture content: Images are just placeholders. The image files weren't in your upload.
+Front-matter junk: Pages 1-15 hold library stamps and Google notices, and some are typed as headings (e.g. "RESPONDET").
+Page numbering: The .fmjl counts pages from 0, but the PDF counts from 1, and the book prints its own page numbers. Citations can be off by one if you don't convert.
+Custom parsing needed: It is a JSON-lines file with a header line, so you need a small custom loader.
+
+## How it gets in the way of splitting
+
+Elements are tied to a single page.
+On 241 of the 319 body pages I checked, the last paragraph stops mid-sentence. The sentence continues as a separate element on the next page.
+Split by element or by page and you get chunks that start or end mid-sentence.
+This is inferred from those counts, not checked one by one.
+Noise sits between the two halves. Running headers like "PERSUASION. 101" are stored exactly at the page break. A simple "join with the next element" step fails unless you remove noise first. My own first test found zero cut paragraphs for this reason.
+The hierarchy is flat. 2,734 of 2,772 elements share one parent, the title heading. Chapters are not parent nodes, so section-based chunking does not work out of the box.
+Paragraphs are too small. Median 144 characters, and 325 under 40 characters (mostly dialogue). One chunk per paragraph gives weak embeddings, so you have to merge them.
+Front matter pollutes early chunks. The text before chapter 1 (page 16) is junk and should be dropped.
+
+Suggested order for your pipeline:
+
+Drop noise and image elements and everything before chapter 1.
+Join a paragraph that ends mid-sentence with the next paragraph if that one starts lowercase.
+Mark chapters with a "CHAPTER" pattern.
+Merge paragraphs to your target chunk size, within each chapter.
+Store the page numbers, converted to your chosen numbering.

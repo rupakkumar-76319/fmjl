@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fmjl - reference tool for FMJL (.fmjl), rulebook version 1.0. Install: pip install fmjl
+"""fmjl - reference tool for FMJL (.fmjl), rulebook version 1.1. Install: pip install fmjl
 
 One document, two forms:
   name.fmjl   storage form   one JSON object per line, for machines
@@ -19,7 +19,7 @@ Commands (fmjl = the installed command, or: python -m fmjl):
   fmjl check notes.fmjl              check every rule, print errors with line numbers
   fmjl view notes.fmjl               print the document as clean Markdown
   fmjl info notes.fmjl               print title, element counts and an outline
-  fmjl upgrade old.fmjl              turn a version 0.1 to 0.5 file into 1.0
+  fmjl upgrade old.fmjl              turn a version 0.1 to 1.0 file into 1.1
   fmjl pdf report.pdf                PDF -> report.fmjl, report.md and images/ (pip install pymupdf)
   fmjl docx report.docx              Word -> report.fmjl, report.md and images/
   fmjl chunks notes.fmjl             retriever-ready chunks as JSON Lines (--by section, --since old.fmjl)
@@ -32,7 +32,7 @@ As a library:
   fmjl.check("notes.fmjl")                  list of errors, empty when the file passes
 
 Needs Python 3.9+ and: pip install jsonschema
-The rulebook (fmjl_rulebook_v1.0.md) is the authority. If this tool and the
+The rulebook (fmjl_rulebook_v1.1.md) is the authority. If this tool and the
 rulebook disagree, this tool has a bug.
 
 Copyright (c) 2026 Rupak Kumar. MIT License, see LICENSE.
@@ -48,8 +48,8 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
-VERSION = "1.0"
-CONVERTER = "fmjl 1.0"
+VERSION = "1.1"
+CONVERTER = "fmjl 1.1"
 
 TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
          "footnote", "form_field", "annotation", "redaction", "noise", "message", "utterance",
@@ -84,7 +84,7 @@ LINK_RE = re.compile(r"\]\(#([a-z0-9_-]+)\)")
 
 SCHEMA = json.loads(r'''{
  "$schema": "https://json-schema.org/draft/2020-12/schema",
- "title": "FMJL line, version 1.0",
+ "title": "FMJL line, version 1.1",
  "oneOf": [
   {
    "$ref": "#/$defs/header"
@@ -1599,27 +1599,80 @@ def _chunk_base(h, e, path):
     return c
 
 
-def chunks(rows, by="element", max_chars=0):
+def _join_md(type_, a, b):
+    """The md of two parts linked by continues, as one text: a word split by a hyphen at the
+    break is joined again."""
+    if type_ in ("paragraph", "quote", "caption", "footnote", "message", "utterance"):
+        if re.search(r"\w-$", a) and b[:1].islower():
+            return a[:-1] + b
+        return a + " " + b
+    return a + ("\n" if type_ == "list" else "\n\n") + b
+
+
+def _join_parts(els):
+    """Elements linked by continues become one element for chunking (rulebook 12.1). The joined
+    element keeps the first part's id and lists every part in "_parts"."""
+    out, unit_of = [], {}
+    for e in els:
+        c = e.get("continues")
+        if isinstance(c, str) and c in unit_of and unit_of[c]["type"] == e.get("type") \
+                and unit_of[c]["_parts"][-1]["id"] == c:
+            u = unit_of[c]
+            u["_parts"].append(e)
+            u["md"] = _join_md(e["type"], u["md"], e.get("md", ""))
+            pages = sorted({p for part in u["_parts"] for p in ([part["page"]] if "page" in part else part.get("pages", []))})
+            for k in ("page", "pages", "bbox"):
+                u.pop(k, None)
+            if len(pages) == 1:
+                u["page"] = pages[0]
+            elif pages:
+                u["pages"] = [pages[0], pages[-1]]
+            u["hash"] = _joined_hash(u["_parts"])
+            unit_of[e["id"]] = u
+            continue
+        u = dict(e, _parts=[e])
+        out.append(u)
+        unit_of[e["id"]] = u
+    return out, unit_of
+
+
+def _part_ids(members):
+    return [p["id"] for m in members for p in m["_parts"]]
+
+
+def _parts_hash(members):
+    return _joined_hash([p for m in members for p in m["_parts"]])
+
+
+def chunks(rows, by="element", max_chars=0, front=False):
     """Retriever-ready chunks (rulebook 12.1). by="element": one per element, with its captions
     and footnotes attached; by="section": one per heading and the elements under it, split when
-    longer than max_chars. Noise, toc and redaction elements are never included."""
+    longer than max_chars. Parts linked by continues form one element. Noise, toc and redaction
+    elements are never included, nor the front matter before the header's meta "fmjl.body"
+    unless front is true."""
     h, els = rows[0], [e for e in rows[1:] if e.get("type") not in EMBED_SKIP]
+    body = (h.get("meta") or {}).get("fmjl.body") if isinstance(h.get("meta"), dict) else None
+    order = [e.get("id") for e in rows[1:]]
+    if not front and isinstance(body, str) and body in order:
+        start = order.index(body)
+        keep = set(order[start:])
+        els = [e for e in els if e.get("id") in keep]
+    els, unit_of = _join_parts(els)
     paths = heading_path(rows)
-    ids = {e["id"] for e in els}
     attached = {}
     for e in els:
-        if e.get("type") in ATTACH and isinstance(e.get("reference"), str) and e["reference"] in ids:
-            attached.setdefault(e["reference"], []).append(e)
+        if e.get("type") in ATTACH and isinstance(e.get("reference"), str) and e["reference"] in unit_of:
+            attached.setdefault(unit_of[e["reference"]]["id"], []).append(e)
     if by == "element":
         out = []
         for e in els:
-            if e.get("type") in ATTACH and isinstance(e.get("reference"), str) and e["reference"] in ids:
+            if e.get("type") in ATTACH and isinstance(e.get("reference"), str) and e["reference"] in unit_of:
                 continue
             c = _chunk_base(h, e, paths.get(e["id"], []))
             members = [e] + attached.get(e["id"], [])
-            if len(members) > 1:
-                c["elements"] = [m["id"] for m in members]
-                c["hash"] = _joined_hash(members)
+            if len(_part_ids(members)) > 1:
+                c["elements"] = _part_ids(members)
+                c["hash"] = _parts_hash(members)
             c["md"] = "\n\n".join(m.get("md", "") for m in members)
             c["text"] = (" > ".join(c["path"]) + "\n\n" if c["path"] else "") + c["md"]
             out.append(c)
@@ -1656,8 +1709,8 @@ def chunks(rows, by="element", max_chars=0):
             c = _chunk_base(h, anchor, paths.get(anchor["id"], []))
             c["id"] = anchor["id"] + (f"/{i + 1}" if len(groups) > 1 else "")
             c["type"] = "section"
-            c["elements"] = [e["id"] for e in grp]
-            c["hash"] = _joined_hash(grp)
+            c["elements"] = _part_ids(grp)
+            c["hash"] = _parts_hash(grp)
             pages = sorted({p for e in grp for p in ([e["page"]] if "page" in e else e.get("pages", []))})
             c.pop("page", None)
             c.pop("pages", None)
@@ -1720,8 +1773,8 @@ def info_text(rows):
 def upgrade_rows(rows, base=None):
     h = rows[0]
     old = h.get("version")
-    if old not in (None, "0.1", "0.2", "0.3", "0.4", "0.5", "1.0"):
-        raise ValueError(f"cannot upgrade version {old}; this tool knows 0.1 to 1.0")
+    if old not in (None, "0.1", "0.2", "0.3", "0.4", "0.5", "1.0", "1.1"):
+        raise ValueError(f"cannot upgrade version {old}; this tool knows 0.1 to 1.1")
     h["version"] = VERSION
     if old != VERSION:
         h["converter"] = f"{h.get('converter', 'unknown')}; upgraded by {CONVERTER}"
@@ -1780,7 +1833,7 @@ def main(argv=None):
                         ("check", "check every rule; print errors with line numbers"),
                         ("view", "print the document as clean Markdown"),
                         ("info", "print title, element counts and an outline"),
-                        ("upgrade", "turn a version 0.1 to 0.5 file into version 1.0"),
+                        ("upgrade", "turn a version 0.1 to 1.0 file into version 1.1"),
                         ("pdf", "PDF -> storage form, authoring form and images/"),
                         ("docx", "Word -> storage form, authoring form and images/"),
                         ("chunks", "retriever-ready chunks as JSON Lines, one per element or section")]:
@@ -1794,6 +1847,8 @@ def main(argv=None):
             p.add_argument("--by", choices=("element", "section"), default="element")
             p.add_argument("--max-chars", type=int, default=0, help="split sections longer than this")
             p.add_argument("--since", help="older .fmjl; print only chunks that changed since it")
+            p.add_argument("--front", action="store_true",
+                           help="include the front matter before the header's fmjl.body")
     argv = _short_form(sys.argv[1:] if argv is None else list(argv))
     a = ap.parse_args(argv)
     path = Path(a.file)
@@ -1840,9 +1895,9 @@ def main(argv=None):
             sys.stdout.write(info_text(read_rows(path)))
             return 0
         if a.cmd == "chunks":
-            out = chunks(read_rows(path), by=a.by, max_chars=a.max_chars)
+            out = chunks(read_rows(path), by=a.by, max_chars=a.max_chars, front=a.front)
             if a.since:
-                out = changed_chunks(out, chunks(read_rows(a.since), by=a.by, max_chars=a.max_chars))
+                out = changed_chunks(out, chunks(read_rows(a.since), by=a.by, max_chars=a.max_chars, front=a.front))
             text = chunks_text(out)
             if a.output:
                 write_text(a.output, text)

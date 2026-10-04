@@ -187,34 +187,34 @@
   },
   "speed": {
     "FMJL": {
-      "read 1 doc (ms)": 0.09090000003197929,
-      "read 100 docs (ms)": 10.749400000349851,
-      "write 100 docs (ms)": 32.09159999823896,
-      "find first table in 100 docs (ms)": 1.3562000003730645
+      "read 1 doc (ms)": 0.1186500012408942,
+      "read 100 docs (ms)": 11.678199982270598,
+      "write 100 docs (ms)": 30.099900002824143,
+      "find first table in 100 docs (ms)": 1.1771499994210899
     },
     "Markdown": {
-      "read 1 doc (ms)": 1.929500000187545,
-      "read 100 docs (ms)": 175.9604999988369,
-      "write 100 docs (ms)": 0.7239000005938578,
-      "find first table in 100 docs (ms)": 171.1919500003205
+      "read 1 doc (ms)": 1.6156500059878454,
+      "read 100 docs (ms)": 176.34850001195446,
+      "write 100 docs (ms)": 0.8533000072930008,
+      "find first table in 100 docs (ms)": 167.23210000782274
     },
     "JSON": {
-      "read 1 doc (ms)": 0.029150000045774505,
-      "read 100 docs (ms)": 3.464499999608961,
-      "write 100 docs (ms)": 4.8695999994379235,
-      "find first table in 100 docs (ms)": 2.621200000248791
+      "read 1 doc (ms)": 0.037600009818561375,
+      "read 100 docs (ms)": 5.2303999837022275,
+      "write 100 docs (ms)": 5.596300004981458,
+      "find first table in 100 docs (ms)": 2.434449997963384
     },
     "LaTeX": {
-      "read 1 doc (ms)": 16.13525000084337,
-      "read 100 docs (ms)": 1658.1026000003476,
-      "write 100 docs (ms)": 32.533699999476084,
-      "find first table in 100 docs (ms)": 0.003099999958067201
+      "read 1 doc (ms)": 16.711299991584383,
+      "read 100 docs (ms)": 1670.439500012435,
+      "write 100 docs (ms)": 31.453800009330735,
+      "find first table in 100 docs (ms)": 0.0029999937396496534
     }
   },
   "efficiency": {
     "FMJL": {
       "file size (bytes)": 9118,
-      "gzip size (bytes)": 3424,
+      "gzip size (bytes)": 3423,
       "tokens (whole file)": null,
       "syntax overhead": 0.429,
       "tokens to send the table to an LLM": null

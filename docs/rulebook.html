@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FMJL Rulebook, Version 1.0</title>
+<title>FMJL Rulebook, Version 1.1</title>
 <meta name="description" content="The rules of FMJL: one document, two forms, twenty element types, and the JSON Schema.">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -19,8 +19,8 @@
 </nav>
 </header>
 <main>
-<h1 id="fmjl-rulebook-version-1-0">FMJL Rulebook, Version 1.0</h1>
-<p>Status: released, version 1.0. License: MIT, copyright Rupak Kumar. Website: https://rupakkumar-76319.github.io/fmjl/</p>
+<h1 id="fmjl-rulebook-version-1-1">FMJL Rulebook, Version 1.1</h1>
+<p>Status: released, version 1.1. License: MIT, copyright Rupak Kumar. Website: https://rupakkumar-76319.github.io/fmjl/</p>
 <p>This rulebook is the authority for FMJL. The <code>fmjl</code> tool, the Python package of the same name, is the reference implementation: if the tool and this rulebook disagree, the tool has a bug.</p>
 <h2 id="1-what-fmjl-is">1. What FMJL Is</h2>
 <p>FMJL stores any document as a list of small parts called elements, such as headings, paragraphs, tables, and images. It is built so that people can read and write documents easily, and machines can search and use them quickly.</p>
@@ -133,7 +133,7 @@
 <tr>
 <td><code>version</code></td>
 <td>Text</td>
-<td>The rulebook version the file follows, for example <code>&quot;1.0&quot;</code></td>
+<td>The rulebook version the file follows, for example <code>&quot;1.1&quot;</code></td>
 </tr>
 <tr>
 <td><code>doc</code></td>
@@ -541,7 +541,7 @@
 <li>A footnote marker inside <code>md</code> is <code>[^n]</code>, where <code>n</code> is the footnote's number in the source. The footnote element's <code>md</code> begins with <code>[^n]: </code> followed by its text.</li>
 </ol>
 <h3 id="7-6-custom-data">7.6 Custom Data</h3>
-<p><code>meta</code> holds custom data on the header or on any element. To avoid clashes, use names that start with your organization, such as <code>&quot;acme.department&quot;</code>. One name is reserved: <code>facts</code>, a list of extracted facts, for example <code>[{&quot;name&quot;: &quot;fee&quot;, &quot;value&quot;: &quot;₹5,000&quot;}]</code>. Names that start with <code>fmjl.</code> are reserved for the tools; for example, an importer records the tracked changes it accepted as <code>fmjl.tracked_changes</code> (section 10.1).</p>
+<p><code>meta</code> holds custom data on the header or on any element. To avoid clashes, use names that start with your organization, such as <code>&quot;acme.department&quot;</code>. One name is reserved: <code>facts</code>, a list of extracted facts, for example <code>[{&quot;name&quot;: &quot;fee&quot;, &quot;value&quot;: &quot;₹5,000&quot;}]</code>. Names that start with <code>fmjl.</code> are reserved for the tools; for example, an importer records the tracked changes it accepted as <code>fmjl.tracked_changes</code> (section 10.1), and the ID of the element where the body of a book starts, after its front matter, as <code>fmjl.body</code> in the header <code>meta</code> (sections 10.1 and 12.1).</p>
 <h2 id="8-canonical-markdown">8. Canonical Markdown</h2>
 <p>The same content must always give the same <code>md</code> text, so that the same content always gives the same <code>hash</code>. <code>md</code> follows CommonMark plus GitHub-style tables, strikethrough, and task lists, written in this canonical form:</p>
 <ol>
@@ -712,6 +712,14 @@ Please submit the form by Friday.
 <li>Tracked changes: an importer takes the accepted text, keeping insertions and dropping deletions. It warns, and records the counts in the header <code>meta</code> as <code>fmjl.tracked_changes</code>.</li>
 <li>Scans and OCR: when font sizes are unreliable, short lines in capital letters or with a section number, such as &quot;2.1 Methods&quot;, become headings.</li>
 <li>Footnotes: written as in section 7.5, one <code>footnote</code> element right after the element that cites it.</li>
+<li>Running headers and footers: a line in the top or bottom margin that repeats on many pages is <code>noise</code>, even when its page number changes, is written in Roman numerals, or moves from one side to the other, so &quot;PERSUASION. 11&quot; and &quot;102 PERSUASION.&quot; are the same header, and so are &quot;xii • Contents&quot; and &quot;Contents • xiii&quot;. Three pages are enough, so a header that names the current chapter is found too. A chapter line (rule 14) is never a running header. A number standing alone near the top or bottom edge is <code>noise</code> with subtype <code>page_number</code>.</li>
+<li>Paragraphs: a paragraph is one element even when the text layer splits it into several blocks. Blocks join when they have the body text size, stand in the same column with the usual line spacing, the line above runs to the right margin, and the line below is not indented. In documents that do not indent their paragraphs, the text above must also stop in the middle of a sentence. A paragraph that starts in lower case, in the same column just below a paragraph that stops mid-sentence and runs to the right margin, is the rest of that paragraph, whatever size the text layer gives it. A word or two that the text layer moved out of its line goes back into that line, and so does a small footnote marker such as &quot;[12]&quot;. A drop cap, the large first letter of a paragraph, goes back to the start of its paragraph. A hyphen at the end of a line is dropped when it only breaks a word (&quot;some-thing&quot; becomes &quot;something&quot;), and kept when the document writes the word with a hyphen elsewhere and never without (&quot;self-esteem&quot;).</li>
+<li>Page breaks: a paragraph that runs over a page break is two elements, the second with <code>continues</code> pointing to the first. This holds when the first part stops in the middle of a sentence, and in books with indented paragraphs also when the second part is not indented.</li>
+<li>Books: when at least three lines read like &quot;Chapter I&quot;, &quot;CHAPTER II.&quot;, &quot;Part Two&quot;, or &quot;Book 3&quot;, those lines become headings, parts at level 1 and chapters below them; &quot;Preface&quot;, &quot;Introduction&quot;, &quot;Prologue&quot;, and &quot;Foreword&quot; lines become headings too. Headings found before the first of these lines, such as words on a title page or a library stamp, become paragraphs, and the first of these lines is recorded as <code>fmjl.body</code> in the header <code>meta</code> (section 7.6).</li>
+<li>Scanned pages: on a page whose text lies over a picture of the whole page, a text layer made by OCR, a space is added between two words that the layer stored without one. A page with no text whose picture is almost all white, such as an empty endpaper, gives no elements.</li>
+<li>Sidebars: text in a smaller size in a narrow column beside the body text, such as quotations in the margin, is a sidebar. It is read after the body text of its page, so it never cuts a body paragraph in two; its blocks join only with each other, and its parts on following pages are linked with <code>continues</code>.</li>
+<li>Headings: a heading may end with &quot;?&quot; or &quot;!&quot;. A chapter number on a line of its own just above a heading becomes part of that heading (&quot;6 Anxiety: Are You a Worrier?&quot;).</li>
+<li>Lists: a list item keeps a letter or Roman marker such as &quot;a)&quot; or &quot;IV.&quot; in its text; only symbol bullets such as &quot;•&quot; become <code>- </code>. Letter markers make a list only when at least two lines carry them in order, so a name such as &quot;R. B. Sparkman&quot; stays text, and a single line starting with a dash is an attribution, not a list. Short lines after a line that ends with a colon, none of them reaching the right margin, are the items of a list without bullets.</li>
 </ol>
 <h2 id="11-processing-order">11. Processing Order</h2>
 <ol>
@@ -740,6 +748,7 @@ Please submit the form by Friday.
 <li>By element, the default: one chunk per element. A <code>caption</code> or <code>footnote</code> whose <code>reference</code> is a single element joins that element's chunk instead of forming its own. <code>noise</code>, <code>toc</code>, and <code>redaction</code> elements are never chunked.</li>
 <li>By section: one chunk per heading, holding the heading and every element below it up to the next heading. A heading with nothing under it but a deeper heading joins that heading's section. A section longer than a chosen number of characters is split into parts with the ids <code>id/1</code>, <code>id/2</code>, and so on.</li>
 </ol>
+<p>In both ways, the parts of an element linked with <code>continues</code> count as one element: their <code>md</code> is joined, with a space for text types and with a word split by a hyphen at the break joined again, and they are never split into different chunks. When the header <code>meta</code> holds <code>fmjl.body</code>, the elements before it are front matter and are not chunked unless the user asks for them (<code>fmjl chunks --front</code>).</p>
 <p>Every chunk carries:</p>
 <ol>
 <li><code>id</code>: the ID of its first element, plus <code>/n</code> for a split part. <code>elements</code>: the IDs it holds, when there are several.</li>
@@ -767,7 +776,7 @@ Please submit the form by Friday.
 <p>This schema checks every line of the storage form automatically (JSON Schema draft 2020-12). A line is valid if it matches either the header or the element definition. Checks that need the whole file are listed in section 11.</p>
 <pre><code class="language-json">{
   &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
-  &quot;title&quot;: &quot;FMJL line, version 1.0&quot;,
+  &quot;title&quot;: &quot;FMJL line, version 1.1&quot;,
   &quot;oneOf&quot;: [
     {
       &quot;$ref&quot;: &quot;#/$defs/header&quot;
@@ -1236,7 +1245,7 @@ Please submit the form by Friday.
 </code></pre>
 <h2 id="15-examples">15. Examples</h2>
 <p>A short leave policy PDF in the storage form:</p>
-<pre><code class="language-json">{&quot;type&quot;:&quot;document&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;doc&quot;:&quot;leave_policy&quot;,&quot;source&quot;:&quot;leave_policy.pdf&quot;,&quot;sha256&quot;:&quot;af179a761f988e6a40d5154b3c3ce735ba94d23ebd82d8e24e3d80de4e2dda68&quot;,&quot;protection&quot;:&quot;none&quot;,&quot;signed&quot;:false,&quot;converter&quot;:&quot;docling 2.x&quot;,&quot;structure&quot;:true,&quot;elements&quot;:6,&quot;created&quot;:&quot;2026-09-26T10:30:00Z&quot;,&quot;lang&quot;:&quot;en&quot;,&quot;access&quot;:[&quot;all&quot;],&quot;title&quot;:&quot;Leave Policy&quot;,&quot;last_id&quot;:6}
+<pre><code class="language-json">{&quot;type&quot;:&quot;document&quot;,&quot;version&quot;:&quot;1.1&quot;,&quot;doc&quot;:&quot;leave_policy&quot;,&quot;source&quot;:&quot;leave_policy.pdf&quot;,&quot;sha256&quot;:&quot;af179a761f988e6a40d5154b3c3ce735ba94d23ebd82d8e24e3d80de4e2dda68&quot;,&quot;protection&quot;:&quot;none&quot;,&quot;signed&quot;:false,&quot;converter&quot;:&quot;docling 2.x&quot;,&quot;structure&quot;:true,&quot;elements&quot;:6,&quot;created&quot;:&quot;2026-09-26T10:30:00Z&quot;,&quot;lang&quot;:&quot;en&quot;,&quot;access&quot;:[&quot;all&quot;],&quot;title&quot;:&quot;Leave Policy&quot;,&quot;last_id&quot;:6}
 {&quot;id&quot;:&quot;leave_policy#e1&quot;,&quot;hash&quot;:&quot;b323ab53d73b48e7&quot;,&quot;type&quot;:&quot;heading&quot;,&quot;level&quot;:1,&quot;parent&quot;:null,&quot;page&quot;:0,&quot;bbox&quot;:[80,60,620,95],&quot;characters&quot;:14,&quot;md&quot;:&quot;# Leave Policy&quot;}
 {&quot;id&quot;:&quot;leave_policy#e2&quot;,&quot;hash&quot;:&quot;b91ad9f6b39e617a&quot;,&quot;type&quot;:&quot;paragraph&quot;,&quot;parent&quot;:&quot;leave_policy#e1&quot;,&quot;page&quot;:0,&quot;bbox&quot;:[80,110,920,170],&quot;characters&quot;:105,&quot;md&quot;:&quot;This policy applies to all full-time employees from their first day of work. See [Table 1](#leave-types).&quot;}
 {&quot;id&quot;:&quot;leave_policy#e3&quot;,&quot;hash&quot;:&quot;79e15a433bf84d1c&quot;,&quot;type&quot;:&quot;table&quot;,&quot;label&quot;:&quot;leave-types&quot;,&quot;parent&quot;:&quot;leave_policy#e1&quot;,&quot;page&quot;:0,&quot;bbox&quot;:[80,190,700,330],&quot;characters&quot;:89,&quot;md&quot;:&quot;| Leave type | Days per year |\n| --- | --- |\n| Sick leave | 12 |\n| Paternity leave | 15 |&quot;}
@@ -1246,7 +1255,7 @@ Please submit the form by Friday.
 </code></pre>
 <p>The same document in the authoring form:</p>
 <pre><code class="language-markdown">---
-fmjl: &quot;1.0&quot;
+fmjl: &quot;1.1&quot;
 doc: leave_policy
 title: Leave Policy
 lang: en
@@ -1314,7 +1323,7 @@ Page 1
 </tr>
 <tr>
 <td><code>fmjl upgrade old.fmjl</code></td>
-<td>Turns a version 0.1 to 0.5 file into version 1.0</td>
+<td>Turns a version 0.1 to 1.0 file into version 1.1</td>
 </tr>
 <tr>
 <td><code>fmjl pdf report.pdf</code></td>
@@ -1339,12 +1348,13 @@ Page 1
 <li>Version 0.4: the format is named FMJL, short for Format, Markdown, JSON Lines; the placeholder name &quot;Format X&quot; is retired; the license is MIT. No rules changed, so 0.3 files stay valid.</li>
 <li>Version 0.5: merged cells can be written in a Markdown table with <code>^</code> and <code>&lt;</code>, and tool-written HTML has one canonical form (sections 8 and 9.2); <code>above</code> and <code>below</code> in notes (9.3); the group title explained (9.4); the <code>md</code> form of footnotes (7.5); <code>fmjl.</code> names reserved in <code>meta</code> (7.6); importer rules (10.1); chunks defined (12.1); the tool warns about a table typed without its separator row; the <code>pdf</code>, <code>docx</code>, and <code>chunks</code> commands. No 0.4 file becomes invalid, so <code>fmjl upgrade</code> only changes the version.</li>
 <li>Version 1.0: the first stable version. No rules changed since 0.5. The <code>fmjl</code> package is on PyPI, the extension on the Marketplace, <code>fmjl.exe</code> on the GitHub release, and this rulebook on the website. From 1.0 on, every 1.x reader reads every 1.x file (section 13).</li>
+<li>Version 1.1: importer rules for books and scans, written after converting a 345-page scanned novel and checking five more books (10.1, rules 11 to 18): running headers with changing page numbers are noise, a paragraph split into blocks by the text layer is one element, page-break continuations are found from the layout, chapter lines become headings, missing spaces in OCR text layers are restored, real hyphens are kept, drop caps rejoin their paragraph, and sidebars are read as their own stream. <code>fmjl.body</code> marks where the front matter ends (7.6). Parts linked with <code>continues</code> form one chunk, and front matter is not chunked by default (12.1). No 1.0 file becomes invalid, so <code>fmjl upgrade</code> only changes the version.</li>
 </ol>
 <p>Moving from 0.2 to 0.3: run <code>fmjl upgrade</code>. Some <code>md</code> texts change once into canonical form, so their hashes change and those elements are embedded again once.</p>
 <h2 id="18-not-decided-yet">18. Not Decided Yet</h2>
 <ol>
 <li>Recovering LaTeX from formulas in PDF files, where only the drawn characters are available.</li>
-<li>Reading order for pages with three or more columns or with sidebars; the importer handles two columns.</li>
+<li>Reading order for pages with three or more columns; the importer handles two columns and sidebars (10.1, rule 16).</li>
 <li>OCR for scanned pages: the path exists and needs Tesseract, but its <code>confidence</code> values have not been checked against real scans.</li>
 </ol>
 

@@ -7,6 +7,8 @@
       "name": "support.type.property-name.fmjl" },
     { "match": "\"(document|heading|paragraph|list|table|formula|code|image|caption|footnote|form_field|annotation|redaction|noise|message|utterance|record|citation|quote|toc|group)\"(?!\\s*:)",
       "name": "constant.language.elementtype.fmjl" },
+    { "match": "\"[a-z0-9_-]+#e[1-9][0-9]*\"(?!\\s*:)",
+      "name": "variable.other.constant.id.fmjl" },
     { "match": "\\b(true|false|null)\\b", "name": "constant.language.fmjl" },
     { "match": "-?\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b", "name": "constant.numeric.fmjl" },
     { "begin": "\"", "end": "\"", "name": "string.quoted.double.fmjl",

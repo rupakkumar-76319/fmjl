@@ -1,5 +1,5 @@
 ---
-fmjl: "1.0"
+fmjl: "1.1"
 doc: my_notes
 lang: en
 access: ["all"]

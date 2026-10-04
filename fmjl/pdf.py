@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""fmjl.pdf - PDF importer for FMJL, rulebook version 1.0.
+"""fmjl.pdf - PDF importer for FMJL, rulebook version 1.1.
 
   fmjl report.pdf                    writes report.fmjl, report.md and images/
   fmjl pdf report.pdf [-o report.fmjl] [--doc name]
 
 What it does with a page:
-  text blocks   headings (by font size), paragraphs, lists
+  text blocks   headings (by font size), paragraphs, lists; blocks that the text layer cut
+                out of one paragraph are joined again
   tables        found by PyMuPDF; merged cells become an HTML table with rowspan and colspan
   images        saved as PNG into images/, captions linked with reference=
   charts        drawn with lines and shapes are rendered to PNG as well
-  noise         headers, footers and page numbers repeated across pages
+  noise         headers, footers and page numbers repeated across pages, also when the
+                page number in them changes
+  books         "Chapter I" lines become headings and the header meta gets fmjl.body
+  scans         missing spaces in an OCR text layer are restored; blank pages are skipped
 Every element gets page (from 0) and bbox (0..1000). Paragraphs that run over
 a page break are linked with continues=. Pages without a text layer need OCR;
 that works when Tesseract is installed, otherwise the page is reported.
@@ -38,13 +42,28 @@ CAPTION_RE = re.compile(r"^\s*(figure|fig\.?|table|chart|diagram|image|photo)\s*
 BULLET_ONLY_RE = re.compile(r"^\s*([•·▪●◦■–—*\-]|\d{1,3}[.)]|[a-zA-Z][.)]|\([a-zA-Z0-9]{1,3}\))\s*$")
 ZERO_WIDTH_RE = re.compile("[​‌‍⁠﻿]")
 SENTENCE_END = tuple('.!?:;"”’)]')
-HEADING_END = tuple('.!?:;,"”’')
+HEADING_END = tuple('.:;,"”’')
+SOFT = ""
+MARKER_RE = re.compile(r"^\[?(\d{1,3}|[ivxlc]{1,7}|[*†‡§])\]?$")
+QUOTES = "\"'’”"
+NUMBER_WORDS = ("one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|"
+                "sixteen|seventeen|eighteen|nineteen|twenty|first|second|third|fourth|fifth|sixth|seventh|"
+                "eighth|ninth|tenth|last")
+CHAPTER_RE = re.compile(r"^(?i:chapter|part|book|volume|canto)\s+([IVXLCDM]+|\d{1,3}|(?i:" + NUMBER_WORDS + r"))"
+                        r"\s*[.:]?(\s*[.:—–-]?\s+\S.{0,70})?$")
+PART_RE = re.compile(r"^(part|book|volume)\b", re.I)
+FRONT_RE = re.compile(r"^(preface|introduction|prologue|foreword)\.?$", re.I)
+MIN_CHAPTERS = 3
 MAX_SCAN_TILES = 8
 COLUMN_TOLERANCE = 20
 
 
 def _norm(text):
-    return re.sub(r"\d", "#", re.sub(r"\s+", " ", text)).strip().lower()
+    """The key of a running header: its letters only, without a page number in Roman numerals
+    at either end, so "PERSUASION. 11", "102 PERSUASION." and "xii • Contents" and
+    "Contents • xiii" are one header each."""
+    text = re.sub(r"^\W*[ivxlcdm]+\b|\b[ivxlcdm]+\W*$", "", text.strip(), flags=re.I) or text
+    return re.sub(r"[^a-z]+", "", text.lower()) or re.sub(r"\d+", "#", re.sub(r"\s+", " ", text)).strip().lower()
 
 
 def _area(rect):
@@ -61,17 +80,41 @@ def _cell(text):
     return re.sub(r"\s+", " ", text or "").strip().replace("|", "\\|")
 
 
-def _block_text(block):
-    lines = []
+def _scanned(blocks, page_rect):
+    """True when the text lies over a picture of the whole page: a scan with a text layer
+    from OCR. Such layers store each word as a span and sometimes leave out the space between
+    two words, so a space belongs between two spans (rulebook 10.1)."""
+    page_area = _area(page_rect) or 1
+    return any(b["type"] == 1 and _area(pymupdf.Rect(b["bbox"])) > 0.8 * page_area for b in blocks) \
+        and any(b["type"] == 0 for b in blocks)
+
+
+def _join_spans(spans, spaced):
+    out = ""
+    for s in spans:
+        t = s["text"]
+        if spaced and out and t[:1].isalnum():
+            end = out.rstrip(QUOTES)
+            closed = 0 < len(end) < len(out) and end[-1] in ",.;:!?"
+            if out[-1].isalnum() or out[-1] in ",.;:!?" or closed:
+                out += " "
+        out += t
+    return out
+
+
+def _block_text(block, spaced=False):
+    lines, rects = [], []
     for line in block["lines"]:
-        text = ZERO_WIDTH_RE.sub("", "".join(s["text"] for s in line["spans"]))
+        text = ZERO_WIDTH_RE.sub("", _join_spans(line["spans"], spaced))
         if not text.strip():
             continue
         if lines and BULLET_ONLY_RE.match(lines[-1]):
             lines[-1] = lines[-1].strip() + " " + text.strip()
+            rects[-1] |= line["bbox"]
         else:
             lines.append(text.rstrip())
-    return lines
+            rects.append(pymupdf.Rect(line["bbox"]))
+    return lines, rects
 
 
 def _cells(block):
@@ -123,6 +166,26 @@ def _merge_text_tables(items):
     return out
 
 
+def _resolve_hyphens(els):
+    """A hyphen at the end of a line was left as SOFT by _join_lines. It stays a hyphen when the
+    document writes the word with a hyphen elsewhere and never without ("self-esteem");
+    otherwise it was only a line break and the halves join ("some-thing" becomes "something")
+    (rulebook 10.1)."""
+    texts = [e.get("md", "") for e in els] + [e.get("_text", "") for e in els]
+    plain = Counter(w.lower() for t in texts for w in re.findall(r"\w+", t.replace(SOFT, " ")))
+    hyphened = Counter(m.group(0).lower() for t in texts for m in re.finditer(r"\w+-\w+", t))
+
+    def pick(m):
+        a, b = m.group(1), m.group(2)
+        joined, kept = (a + b).lower(), (a + "-" + b).lower()
+        return a + "-" + b if hyphened[kept] and not plain[joined] else a + b
+
+    for e in els:
+        for k in ("md", "_text"):
+            if SOFT in e.get(k, ""):
+                e[k] = re.sub(r"(\w*)" + SOFT + r"(\w*)", pick, e[k])
+
+
 def _join_lines(lines):
     out = ""
     for ln in lines:
@@ -130,7 +193,7 @@ def _join_lines(lines):
         if not out:
             out = ln
         elif out.endswith("-") and ln[:1].islower():
-            out = out[:-1] + ln
+            out = out[:-1] + SOFT + ln
         else:
             out += " " + ln
     return re.sub(r"[ \t]+", " ", out)
@@ -215,7 +278,7 @@ def _span_stats(block):
 
 class _Page:
     def __init__(self, number, rect):
-        self.number, self.rect, self.items, self.no_text = number, rect, [], False
+        self.number, self.rect, self.items, self.no_text, self.blank = number, rect, [], False, False
 
 
 def _read_pages(doc, ocr):
@@ -243,6 +306,10 @@ def _read_pages(doc, ocr):
         for rect in charts:
             pg.items.append({"kind": "drawing", "rect": rect})
         d = page.get_text("dict", textpage=textpage) if textpage else page.get_text("dict")
+        if pg.no_text and _blank(page):
+            pg.no_text, pg.blank = False, True
+            continue
+        spaced = _scanned(d["blocks"], page.rect)
         image_blocks = sum(1 for b in d["blocks"] if b["type"] == 1)
         scan_tiles = image_blocks > MAX_SCAN_TILES and not pg.no_text
         for b in d["blocks"]:
@@ -259,14 +326,218 @@ def _read_pages(doc, ocr):
                 continue
             if any(c.contains(rect) for c in charts):
                 continue
-            lines = _block_text(b)
+            lines, rects = _block_text(b, spaced)
             if not lines:
                 continue
             size, bold, chars = _span_stats(b)
-            pg.items.append({"kind": "text", "rect": rect, "lines": lines, "size": size, "bold": bold,
-                             "chars": chars, "ocr": textpage is not None, "cells": _cells(b)})
-        pg.items = _merge_text_tables(pg.items)
+            pg.items.append({"kind": "text", "rect": rect, "lines": lines, "line_rects": rects, "size": size,
+                             "bold": bold, "chars": chars, "ocr": textpage is not None, "cells": _cells(b)})
+        pg.items = _colon_lists(_attach_fragments(_drop_caps(_merge_text_tables(pg.items))))
     return pages, image_seen
+
+
+def _blank(page):
+    """A page with no text whose picture is almost all white, such as a scanned endpaper."""
+    pix = page.get_pixmap(dpi=24, colorspace=pymupdf.csGRAY)
+    dark = sum(1 for v in pix.samples if v < 160)
+    return dark <= 0.003 * len(pix.samples)
+
+
+def _colon_lists(items):
+    """A block whose line ends with a colon and is followed by two or more short lines that do
+    not reach the right margin holds a list without bullets: the short lines become list items
+    instead of being run together with the sentence above (rulebook 10.1, rule 18)."""
+    out = []
+    for it in items:
+        lines = it.get("lines") or []
+        cut = next((i for i, ln in enumerate(lines[:-2]) if ln.rstrip().endswith(":")), None) \
+            if it["kind"] == "text" and not it.get("cells") else None
+        if cut is None:
+            out.append(it)
+            continue
+        rest, rects = lines[cut + 1:], it["line_rects"][cut + 1:]
+        right = max(r.x1 for r in it["line_rects"])
+        size = it["size"] or 10
+        if not all(r.x1 < right - 3 * size for r in rects[:-1]) or any(ln.rstrip().endswith((".", "!", "?")) for ln in rest[:-1]) \
+                or any(BULLET_RE.match(ln) for ln in rest):
+            out.append(it)
+            continue
+        head = dict(it, lines=lines[:cut + 1], line_rects=it["line_rects"][:cut + 1], cells=None)
+        head["rect"] = pymupdf.Rect(head["line_rects"][0])
+        for r in head["line_rects"][1:]:
+            head["rect"] |= r
+        tail = dict(it, lines=["- " + ln.strip() for ln in rest], line_rects=list(rects), cells=None)
+        tail["rect"] = pymupdf.Rect(rects[0])
+        for r in rects[1:]:
+            tail["rect"] |= r
+        out += [head, tail]
+    return out
+
+
+def _drop_caps(items):
+    """A drop cap, the large first letter of a paragraph, goes back to the start of the
+    paragraph beside it ("I" + "n the early 1880s"), wherever the text layer put it (rulebook 10.1)."""
+    texts = [it for it in items if it["kind"] == "text" and not it.get("cells")]
+    if not texts:
+        return items
+    sizes = sorted(it["size"] for it in texts)
+    usual = sizes[len(sizes) // 2] or 10
+    for it in texts:
+        for i in range(len(it["lines"]) - 1, -1, -1):
+            letter, r = it["lines"][i].strip(), it["line_rects"][i]
+            if len(letter) != 1 or not letter.isalpha() or not letter.isupper() or r.height < 2.2 * usual:
+                continue
+            for t in texts:
+                if t is it or not t["lines"]:
+                    continue
+                first = t["line_rects"][0]
+                if -2 <= first.x0 - r.x1 <= 2 * usual and r.y0 - usual <= first.y0 <= r.y0 + 0.5 * r.height \
+                        and t["lines"][0][:1].isalpha():
+                    t["lines"][0] = letter + t["lines"][0].lstrip()
+                    t["line_rects"][0] = first | r
+                    t["rect"] = t["rect"] | r
+                    del it["lines"][i], it["line_rects"][i]
+                    break
+    return [it for it in items if it["kind"] != "text" or it["lines"]]
+
+
+def _attach_fragments(items):
+    """Some text layers put the last word of a line in a block of its own. Such a word goes
+    back into the line it stands beside instead of becoming a paragraph after the block."""
+    texts = [it for it in items if it["kind"] == "text" and not it.get("cells")]
+    out = []
+    for it in items:
+        if it["kind"] == "text" and not it.get("cells") and len(it["lines"]) == 1 \
+                and len(it["lines"][0].split()) <= 3 and _place_fragment(it, texts):
+            texts.remove(it)
+            continue
+        out.append(it)
+    return out
+
+
+def _is_list(lines):
+    """Lines that are list items. A letter or Roman marker ("A.", "iv)") counts only when at
+    least two lines carry such markers in order, so a name such as "R. B. Sparkman" is not a list."""
+    marks = [m.group(1) for m in (BULLET_RE.match(ln) for ln in lines) if m]
+    if not BULLET_RE.match(lines[0]) or len(marks) < max(1, (len(lines) + 1) // 2):
+        return False
+    if len(marks) < 2 and marks[0] in "–—-*":
+        return False
+    letters = [re.sub(r"[().]", "", k) for k in marks if re.fullmatch(r"\(?[a-zA-Z]{1,4}[.)]", k)]
+    if letters and len(letters) == len(marks):
+        if len(letters) < 2:
+            return False
+        order = [ord(k[0].lower()) for k in letters]
+        roman = all(re.fullmatch(r"[ivxlc]+", k, re.I) for k in letters)
+        return roman or order == sorted(order)
+    return True
+
+
+def _same_size(a, b):
+    """Font sizes that are equal for layout purposes; OCR layers measure each block a little
+    differently."""
+    return abs(a - b) <= max(0.5, 0.2 * max(a, b))
+
+
+def _place_fragment(frag, texts):
+    r, size = frag["rect"], frag["size"] or 10
+    for host in texts:
+        marker = MARKER_RE.match(frag["lines"][0].strip()) and frag["size"] < host["size"]
+        if host is frag or len(host["lines"]) < 2 or not (_same_size(host["size"], frag["size"]) or marker):
+            continue
+        for i, lr in enumerate(host["line_rects"]):
+            overlap = min(lr.y1, r.y1) - max(lr.y0, r.y0)
+            if overlap < 0.5 * min(r.height, lr.height):
+                continue
+            if 0 <= r.x0 - lr.x1 <= 1.5 * size:
+                host["lines"][i] = host["lines"][i].rstrip() + " " + frag["lines"][0].strip()
+            elif 0 <= lr.x0 - r.x1 <= 1.5 * size:
+                host["lines"][i] = frag["lines"][0].strip() + " " + host["lines"][i].lstrip()
+            else:
+                continue
+            host["line_rects"][i] = lr | r
+            host["rect"] = host["rect"] | r
+            host["chars"] += frag["chars"]
+            return True
+    return False
+
+
+def _full_last(it):
+    """The last line of a block runs to the right edge, so the paragraph goes on."""
+    if len(it["line_rects"]) < 2:
+        return None
+    return it["line_rects"][-1].x1 >= it["rect"].x1 - 1.5 * (it["size"] or 10)
+
+
+def _indented(it):
+    """The first line of a block starts further right than the others: a new paragraph."""
+    rects = it["line_rects"]
+    if len(rects) < 2:
+        return None
+    return rects[0].x0 > min(r.x0 for r in rects[1:]) + 0.6 * (it["size"] or 10)
+
+
+def _line_gap(*its):
+    gaps = [b.y0 - a.y1 for it in its for a, b in zip(it["line_rects"], it["line_rects"][1:])]
+    gaps.sort()
+    return gaps[len(gaps) // 2] if gaps else None
+
+
+def _indent_style(pages, body):
+    """True when the document starts its paragraphs with an indented first line, as books do.
+    Only then does a block whose first line is not indented say "the paragraph goes on";
+    in block-style documents a full last line proves nothing."""
+    flags = [_indented(it) for pg in pages for it in pg.items
+             if it["kind"] == "text" and not it.get("noise") and len(it["line_rects"]) >= 3
+             and _same_size(it["size"], body)]
+    return len(flags) >= 10 and sum(1 for f in flags if f) >= 0.3 * len(flags)
+
+
+def _merge_paragraphs(pg, body, indent_style):
+    """Join text blocks that are one paragraph split by the text layer: same body size, the
+    same column, the usual line spacing between them, the line above running to the margin,
+    and the line below not indented. In documents without indented paragraphs the text above
+    must also stop mid-sentence (rulebook 10.1)."""
+    def plain(it):
+        return it["kind"] == "text" and not it.get("noise") and not it.get("cells") and not it["bold"] \
+            and (_same_size(it["size"], body) or it.get("side")) and not _is_list(it["lines"]) \
+            and not CHAPTER_RE.match(_join_lines(it["lines"]))
+
+    others = [it for it in pg.items if not plain(it)]
+    out = []
+    for it in sorted(pg.items, key=lambda i: (i["rect"].y0, i["rect"].x0)):
+        if not plain(it):
+            out.append(it)
+            continue
+        b = it["rect"]
+        above = [p for p in out if plain(p) and p["rect"].y1 <= b.y0 + 0.5 * (body or 10)
+                 and bool(p.get("side")) == bool(it.get("side")) and _same_size(p["size"], it["size"])
+                 and min(p["rect"].x1, b.x1) - max(p["rect"].x0, b.x0) >= 0.6 * min(p["rect"].width, b.width)]
+        target = max(above, key=lambda p: p["rect"].y1) if above else None
+        if target is not None:
+            a, size = target["rect"], (it["size"] if it.get("side") else body) or 10
+            usual = _line_gap(target, it)
+            limit = max(usual if usual is not None else 0.2 * size, 0) + 0.3 * size
+            if re.search(r"\w-$", target["lines"][-1].rstrip()) or len(it["lines"]) == 1:
+                limit = max(limit, 0.8 * size)
+            between = any(o is not it and o is not target and o["rect"].y0 < b.y0 and o["rect"].y1 > a.y1
+                          and min(o["rect"].x1, b.x1) > max(o["rect"].x0, b.x0) for o in others)
+            col_right = max(a.x1, b.x1)
+            last_full = target["line_rects"][-1].x1 >= col_right - 1.5 * size
+            col_left = min([r.x0 for r in target["line_rects"][1:] + it["line_rects"][1:]] or [a.x0, b.x0])
+            not_indented = it["line_rects"][0].x0 <= col_left + 0.6 * size
+            goes_on = indent_style or not target["lines"][-1].rstrip().endswith(SENTENCE_END)
+            if it.get("side"):
+                last_full = goes_on = not_indented = not target["lines"][-1].rstrip().endswith(SENTENCE_END) \
+                    or it["lines"][0].lstrip()[:1].islower()
+            if -0.5 * size <= b.y0 - a.y1 <= limit and not between and last_full and not_indented and goes_on:
+                target["lines"] += it["lines"]
+                target["line_rects"] += it["line_rects"]
+                target["rect"] = a | b
+                target["chars"] += it["chars"]
+                continue
+        out.append(it)
+    pg.items = out
 
 
 def _body_size(pages):
@@ -287,12 +558,14 @@ def _mark_noise(pages):
                 continue
             top, bottom = it["rect"].y0 / h, it["rect"].y1 / h
             zone = "header" if bottom < 0.12 else "footer" if top > 0.88 else None
+            if not zone and PAGE_NUMBER_RE.match(" ".join(it["lines"])) and (bottom < 0.15 or top > 0.8):
+                zone = "header" if bottom < 0.15 else "footer"
             if not zone:
                 continue
             key = (zone, _norm(" ".join(it["lines"])))
             it["_zone"], it["_key"] = zone, key
             seen[key] += 1
-    threshold = max(2, int(len(pages) * 0.3))
+    threshold = max(2, min(3, int(len(pages) * 0.3)))
     for pg in pages:
         for it in pg.items:
             zone = it.get("_zone")
@@ -301,11 +574,31 @@ def _mark_noise(pages):
             text = " ".join(it["lines"])
             if PAGE_NUMBER_RE.match(text):
                 it["noise"] = "page_number"
-            elif seen[it["_key"]] >= threshold and len(text) < 200:
+            elif seen[it["_key"]] >= threshold and len(text) < 200 \
+                    and not CHAPTER_RE.match(_join_lines(it["lines"])) and not FRONT_RE.match(_join_lines(it["lines"])):
                 it["noise"] = zone
 
 
+def _mark_sidebars(pages, body):
+    """A sidebar is text in a smaller size in a narrow column beside the body text, such as
+    quotations in the margin. It is read after the body text of its page, as its own stream,
+    so that it never cuts a body paragraph in two (rulebook 10.1)."""
+    for pg in pages:
+        w = pg.rect.width or 1
+        main = [it for it in pg.items if it["kind"] == "text" and not it.get("noise") and _same_size(it["size"], body)]
+        side = [it for it in pg.items if it["kind"] == "text" and not it.get("noise") and it["size"] < body
+                and not _same_size(it["size"], body) and it["rect"].width < 0.4 * w
+                and not CAPTION_RE.match(" ".join(it["lines"]))
+                and all(it["rect"].x0 >= m["rect"].x1 - 2 or it["rect"].x1 <= m["rect"].x0 + 2 for m in main)]
+        if main and len(side) >= 2:
+            for it in side:
+                it["side"] = True
+
+
 def _order(items, rect):
+    side = sorted((it for it in items if it.get("side")), key=lambda i: (i["rect"].y0, i["rect"].x0))
+    if side:
+        return _order([it for it in items if not it.get("side")], rect) + side
     w = rect.width or 1
     mid = w / 2
     narrow = [it for it in items if it["rect"].width < 0.6 * w]
@@ -337,18 +630,32 @@ def _text_element(it, body, levels):
     text = _join_lines(lines)
     if it.get("noise"):
         return {"type": "noise", "subtype": it["noise"], "md": text}
+    e = _plain_element(it, text, body, levels)
+    if len(lines) <= 2 and (CHAPTER_RE.match(text) or FRONT_RE.match(text)):
+        e["_chapter"] = "part" if PART_RE.match(text) else "chapter" if CHAPTER_RE.match(text) else "front"
+        e["_text"] = re.sub(r"\s+([.,:;])", r"\1", text)
+    return e
+
+
+def _plain_element(it, text, body, levels):
+    lines = it["lines"]
     size = it["size"]
     short = len(text) <= 160 and len(lines) <= 3 and not text.endswith(HEADING_END)
     if short and (size in levels or (it["bold"] and size >= body)):
         level = levels.get(size, min(6, len(levels) + 1))
         return {"type": "heading", "level": level, "md": "#" * level + " " + text}
-    if BULLET_RE.match(lines[0]) and sum(1 for ln in lines if BULLET_RE.match(ln)) >= max(1, len(lines) // 2):
+    if _is_list(lines):
         items = []
         for ln in lines:
             m = BULLET_RE.match(ln)
             if m:
                 n = NUMBER_RE.match(ln)
-                items.append(("%s. " % n.group(1) if n else "- ") + m.group(2).strip())
+                if n:
+                    items.append("%s. " % n.group(1) + m.group(2).strip())
+                elif m.group(1)[:1].isalnum() or m.group(1)[:1] == "(":
+                    items.append("- " + m.group(1) + " " + m.group(2).strip())
+                else:
+                    items.append("- " + m.group(2).strip())
             elif items:
                 items[-1] = _join_lines([items[-1], ln])
             else:
@@ -391,6 +698,40 @@ def _fallback_headings(els):
         e["type"], e["level"], e["md"] = "heading", level, "#" * level + " " + text
 
 
+def _number_headings(els):
+    """A chapter number printed on its own line above the title ("6", then "Anxiety") is one
+    heading with the title: "6 Anxiety" (rulebook 10.1)."""
+    for i in range(len(els) - 2, -1, -1):
+        e, nxt = els[i], els[i + 1]
+        num = re.sub(r"^#{1,6}\s*", "", e["md"]) if e["type"] == "heading" else ""
+        if re.fullmatch(r"\d{1,3}|[IVXLC]{1,7}", num) and nxt["type"] == "heading" and nxt.get("page") == e.get("page"):
+            level = min(e["level"], nxt["level"])
+            nxt["level"], nxt["md"] = level, "#" * level + " " + num + " " + re.sub(r"^#{1,6}\s*", "", nxt["md"])
+            nxt["bbox"] = [min(e["bbox"][0], nxt["bbox"][0]), min(e["bbox"][1], nxt["bbox"][1]),
+                           max(e["bbox"][2], nxt["bbox"][2]), max(e["bbox"][3], nxt["bbox"][3])]
+            del els[i]
+
+
+def _chapters(els):
+    """Books: when at least MIN_CHAPTERS lines read "Chapter I", "Part Two" and the like, those
+    lines are the headings (parts level 1, chapters below them), headings before the first one
+    are front matter and become paragraphs, and the first one is where the body starts
+    (rulebook 10.1). Returns that element, or None."""
+    marked = [e for e in els if e.get("_chapter") and e["type"] != "noise"]
+    if sum(1 for e in marked if e["_chapter"] != "front") < MIN_CHAPTERS:
+        return None
+    parts = any(e["_chapter"] == "part" for e in marked)
+    for e in marked:
+        level = 2 if parts and e["_chapter"] != "part" else 1
+        e["type"], e["level"], e["md"] = "heading", level, "#" * level + " " + e["_text"]
+    first = marked[0]
+    for e in els[:els.index(first)]:
+        if e["type"] == "heading":
+            e["type"], e["md"] = "paragraph", re.sub(r"^#{1,6}\s+", "", e["md"])
+            del e["level"]
+    return first
+
+
 def _clamp_levels(els):
     """A heading is at most one level deeper than the heading before it (rulebook 10.1)."""
     prev = 0
@@ -427,6 +768,42 @@ def _near(a, b, gap):
     return horizontal and (-6 <= b.y0 - a.y1 <= gap or -6 <= a.y0 - b.y1 <= gap)
 
 
+def _rejoin_tails(page_els, body):
+    """A paragraph that starts in lower case, in the same column directly below or inside a
+    paragraph that stops mid-sentence, is the rest of that paragraph: the text layer cut it
+    off, often with a wrong font size ("was .", "room.") (rulebook 10.1, rule 12)."""
+    line = 1.6 * (body or 10)
+    paras = [p for p in page_els if p["type"] == "paragraph" and p.get("_rect") is not None]
+
+    def runs_to_margin(p):
+        if p.get("_full") is not None:
+            return p["_full"]
+        right = max((q["_rect"].x1 for q in paras if q.get("_side") == p.get("_side")
+                     and min(q["_rect"].x1, p["_rect"].x1) > max(q["_rect"].x0, p["_rect"].x0)), default=p["_rect"].x1)
+        return p["_rect"].x1 >= right - 1.5 * (body or 10)
+
+    out = []
+    for e in page_els:
+        r = e.get("_rect")
+        host = None
+        if e["type"] == "paragraph" and r is not None and e["md"][:1].islower():
+            near = [p for p in out if p["type"] == "paragraph" and p.get("_side") == e.get("_side")
+                    and not p["md"].rstrip().endswith(SENTENCE_END) and p["_rect"].y0 <= r.y0 <= p["_rect"].y1 + line
+                    and min(p["_rect"].x1, r.x1) - max(p["_rect"].x0, r.x0) >= 0.5 * min(p["_rect"].width, r.width)]
+            host = max(near, key=lambda p: p["_rect"].y1) if near else None
+            if host is not None and not (runs_to_margin(host) or e.get("_side")):
+                host = None
+        if host is None:
+            out.append(e)
+            continue
+        joiner = SOFT if re.search(r"\w-$", host["md"]) else " "
+        host["md"] = (host["md"][:-1] if joiner == SOFT else host["md"]) + joiner + e["md"]
+        host["_rect"] = host["_rect"] | r
+        host["bbox"] = _bbox(host["_rect"], host["_page_rect"])
+        host["_full"] = e.get("_full")
+    return out
+
+
 def _merge_lists(page_els):
     out = []
     for e in page_els:
@@ -451,6 +828,10 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
     pages, image_seen = _read_pages(pdf, ocr)
     body = _body_size(pages)
     _mark_noise(pages)
+    _mark_sidebars(pages, body)
+    indent_style = _indent_style(pages, body)
+    for pg in pages:
+        _merge_paragraphs(pg, body, indent_style)
     levels = _heading_levels(pages, body)
     warnings = [f"page {pg.number + 1} has no text layer; install Tesseract for OCR" for pg in pages if pg.no_text]
 
@@ -462,6 +843,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
         for it in ordered:
             if it["kind"] == "text":
                 e = _text_element(it, body, levels)
+                e["_indented"], e["_full"], e["_side"] = _indented(it), _full_last(it), bool(it.get("side"))
                 if it.get("ocr"):
                     e["meta"] = {"ocr": True}
             elif it["kind"] == "table":
@@ -484,7 +866,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
             e["_rect"] = pymupdf.Rect(it["rect"])
             e["_page_rect"] = pg.rect
             page_els.append(e)
-        page_els = _merge_lists(page_els)
+        page_els = _rejoin_tails(_merge_lists(page_els), body)
         for i, e in enumerate(page_els):
             if e["type"] != "caption":
                 continue
@@ -509,6 +891,9 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
                     target["subtype"] = "chart"
         els.extend(page_els)
 
+    _resolve_hyphens(els)
+    _number_headings(els)
+    start = _chapters(els)
     if sum(1 for e in els if e["type"] == "heading") < 2 and len(pages) > 1:
         _fallback_headings(els)
     _clamp_levels(els)
@@ -531,18 +916,20 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
         e.pop("_rect", None)
         e.pop("_page_rect", None)
 
-    prev = None
+    last = {}
     for e in els:
         if e["type"] in ("noise", "caption", "image"):
             continue
+        prev = last.get(e.get("_side", False))
+        last[e.get("_side", False)] = e
         if prev is not None and e["type"] == "paragraph" and prev["type"] == "paragraph" \
-                and e["page"] == prev["page"] + 1 and not prev["md"].endswith(SENTENCE_END) \
-                and e["md"][:1].islower():
+                and e["page"] == prev["page"] + 1 and e.get("_indented") is not True \
+                and (not prev["md"].endswith(SENTENCE_END) and (e["md"][:1].islower() or prev.get("_full"))
+                     or indent_style and prev.get("_full") and e.get("_indented") is False):
             e["continues"] = prev["id"]
-        prev = e
 
     meta = pdf.metadata or {}
-    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl pdf 1.0"}
+    h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl pdf 1.1"}
     title = (meta.get("title") or "").strip()
     if not title:
         for e in els:
@@ -558,6 +945,8 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
     if m:
         h["date"] = "-".join(m.groups())
     h["meta"] = {"pages": len(pages)}
+    if start is not None and start is not els[0]:
+        h["meta"]["fmjl.body"] = start["id"]
     rows = fmjl.fill([h] + els, base=path.parent)
     return rows, warnings
 

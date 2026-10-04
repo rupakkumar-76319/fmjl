@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fmjl"
-version = "1.0.1"
+version = "1.1.0"
 description = "FMJL (.fmjl): one document, two forms. JSON Lines container, Markdown text, LaTeX formulas, HTML merged-cell tables, built for RAG. Converter, checker, PDF and Word importers, retriever chunks."
 readme = { text = """# FMJL
 
@@ -45,7 +45,7 @@ fmjl = "fmjl:main"
 
 [project.urls]
 Homepage = "https://github.com/rupakkumar-76319/fmjl"
-Rulebook = "https://github.com/rupakkumar-76319/fmjl/blob/main/rulebook/fmjl_rulebook_v1.0.md"
+Rulebook = "https://github.com/rupakkumar-76319/fmjl/blob/main/rulebook/fmjl_rulebook_v1.1.md"
 Issues = "https://github.com/rupakkumar-76319/fmjl/issues"
 
 [tool.setuptools]

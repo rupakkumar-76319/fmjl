@@ -3,8 +3,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-const VERSION = "1.0";
-const CONVERTER = "fmjl 1.0";
+const VERSION = "1.1";
+const CONVERTER = "fmjl 1.1";
 
 const TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
   "footnote", "form_field", "annotation", "redaction", "noise", "message", "utterance",
