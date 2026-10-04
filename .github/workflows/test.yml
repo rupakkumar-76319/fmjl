@@ -85,6 +85,28 @@ jobs:
           assert any(e.get("html", "").count('colspan="2"') for e in rows[1:])
           print("word features ok")
           EOF
+      - name: Export to other formats
+        run: |
+          sudo apt-get install -y pandoc > /dev/null
+          for f in md html pdf docx odt epub; do
+            python -m fmjl export examples/solar_report.fmjl --to $f -o /tmp/imp/solar.$f
+            python -m fmjl export examples/solar_schools.fmjl --to $f -o /tmp/imp/schools.$f
+            python -m fmjl export examples/maintenance_guide.fmjl --to $f -o /tmp/imp/guide.$f
+          done
+          python - <<'EOF'
+          import re, zipfile, pymupdf
+          pdf = pymupdf.open("/tmp/imp/solar.pdf")
+          text = " ".join(p.get_text() for p in pdf).replace("\n", " ")
+          assert "Neither problem is expected to recur" in text, "continues not joined in PDF"
+          assert "Solar Schools Programme" in text and "Darbhanga" in text
+          doc = zipfile.ZipFile("/tmp/imp/schools.docx").read("word/document.xml").decode("utf-8")
+          assert re.search(r"<m:oMath\b", doc), "formulas are not Word equations"
+          guide = zipfile.ZipFile("/tmp/imp/guide.docx").read("word/document.xml").decode("utf-8")
+          assert "gridSpan" in guide or "vMerge" in guide, "merged cells lost in Word"
+          assert "images/" in open("/tmp/imp/solar.md", encoding="utf-8").read() or "solar_report_e16" in open("/tmp/imp/solar.md", encoding="utf-8").read()
+          assert "data:image/png;base64," in open("/tmp/imp/solar.html", encoding="utf-8").read()
+          print("export ok")
+          EOF
       - name: Quality check of the PDF importer
         run: python benchmark/quality.py --strict examples/solar_report.pdf examples/sample_book.pdf
       - name: Build the docs site

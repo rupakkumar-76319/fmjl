@@ -47,6 +47,7 @@ fmjl notes.md               # Markdown  -> notes.fmjl, then checks every rule
 fmjl notes.fmjl             # .fmjl     -> notes.md; edit it and run the first line again
 fmjl report.pdf             # PDF       -> report.fmjl and images/ (--md adds report.md)
 fmjl report.docx            # Word      -> the same
+fmjl export notes.fmjl --to docx   # .fmjl -> Word; also md, html, pdf, odt, epub
 fmjl notes.md out\notes.fmjl    # a second name is the output file
 ```
 
@@ -148,6 +149,8 @@ imported `.fmjl` and `.md`.
 | `fmjl pdf report.pdf` | PDF to storage form and `images/`; `--md` also writes the authoring form |
 | `fmjl docx report.docx` | Word to storage form and `images/`; `--md` also writes the authoring form |
 | `fmjl chunks report.fmjl` | Retriever-ready chunks as JSON Lines; `--front` keeps a book's front matter |
+| `fmjl export report.fmjl --to docx` | Storage form to clean Markdown, HTML, PDF, Word, OpenDocument or EPUB (PDF needs PyMuPDF; Word, OpenDocument and EPUB need pandoc) |
+| `fmjl --version` | Prints the package and rulebook version |
 
 Without the package installed, `python -m fmjl <command>` from this folder does the same;
 `fmjl.cmd` here is the one-word shortcut for Windows.

@@ -20,9 +20,10 @@ Commands (fmjl = the installed command, or: python -m fmjl):
   fmjl view notes.fmjl               print the document as clean Markdown
   fmjl info notes.fmjl               print title, element counts and an outline
   fmjl upgrade old.fmjl              turn a version 0.1 to 1.0 file into 1.1
-  fmjl pdf report.pdf                PDF -> report.fmjl, report.md and images/ (pip install pymupdf)
-  fmjl docx report.docx              Word -> report.fmjl, report.md and images/
+  fmjl pdf report.pdf                PDF -> report.fmjl and images/ (--md adds report.md; pip install pymupdf)
+  fmjl docx report.docx              Word -> report.fmjl and images/ (--md adds report.md)
   fmjl chunks notes.fmjl             retriever-ready chunks as JSON Lines (--by section, --since old.fmjl)
+  fmjl export notes.fmjl --to docx   also md, html, pdf, odt, epub (pdf needs pymupdf, docx/odt/epub pandoc)
 
 As a library:
   import fmjl
@@ -1798,7 +1799,7 @@ def _report(errors):
     return 0
 
 
-COMMANDS = ("new", "md", "fill", "check", "view", "info", "upgrade", "pdf", "docx", "chunks")
+COMMANDS = ("new", "md", "fill", "check", "view", "info", "upgrade", "pdf", "docx", "chunks", "export")
 
 
 def _short_form(argv):
@@ -1823,9 +1824,18 @@ def _short_form(argv):
     return [cmd, argv[0]] + rest
 
 
+def _package_version():
+    try:
+        from importlib.metadata import version
+        return version("fmjl")
+    except Exception:
+        return VERSION
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="fmjl", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--version", action="version", version=f"fmjl {_package_version()} (rulebook {VERSION})")
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, help_ in [("new", "authoring form (.md) -> storage form (.fmjl)"),
                         ("md", "storage form (.fmjl) -> authoring form (.md)"),
@@ -1834,17 +1844,20 @@ def main(argv=None):
                         ("view", "print the document as clean Markdown"),
                         ("info", "print title, element counts and an outline"),
                         ("upgrade", "turn a version 0.1 to 1.0 file into version 1.1"),
-                        ("pdf", "PDF -> storage form, authoring form and images/"),
-                        ("docx", "Word -> storage form, authoring form and images/"),
-                        ("chunks", "retriever-ready chunks as JSON Lines, one per element or section")]:
+                        ("pdf", "PDF -> storage form and images/ (--md: also the authoring form)"),
+                        ("docx", "Word -> storage form and images/ (--md: also the authoring form)"),
+                        ("chunks", "retriever-ready chunks as JSON Lines, one per element or section"),
+                        ("export", "storage form -> md, html, pdf, docx, odt or epub")]:
         p = sub.add_parser(name, help=help_)
         p.add_argument("file")
-        if name in ("new", "md", "upgrade", "pdf", "docx", "chunks"):
+        if name in ("new", "md", "upgrade", "pdf", "docx", "chunks", "export"):
             p.add_argument("-o", "--output", help="output file (default: same name, other extension)")
         if name in ("new", "pdf", "docx"):
             p.add_argument("--doc", help="document name when the front matter has none")
         if name in ("pdf", "docx"):
             p.add_argument("--md", action="store_true", help="also write the .md authoring form")
+        if name == "export":
+            p.add_argument("--to", required=True, choices=("md", "html", "pdf", "docx", "odt", "epub"))
         if name == "chunks":
             p.add_argument("--by", choices=("element", "section"), default="element")
             p.add_argument("--max-chars", type=int, default=0, help="split sections longer than this")
@@ -1854,6 +1867,9 @@ def main(argv=None):
     argv = _short_form(sys.argv[1:] if argv is None else list(argv))
     a = ap.parse_args(argv)
     path = Path(a.file)
+    if a.cmd == "export":
+        from fmjl import export as exporter
+        return exporter.main([str(path), "--to", a.to] + (["-o", a.output] if a.output else []))
     if a.cmd in ("pdf", "docx"):
         try:
             import importlib

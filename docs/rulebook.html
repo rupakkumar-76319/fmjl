@@ -1289,7 +1289,7 @@ Table 1: Leave types
 Page 1
 </code></pre>
 <h2 id="16-tools">16. Tools</h2>
-<p>The reference tool is the Python package <code>fmjl</code> (<code>pip install fmjl</code>, or <code>python -m fmjl</code> from the repository). It has ten commands:</p>
+<p>The reference tool is the Python package <code>fmjl</code> (<code>pip install fmjl</code>, or <code>python -m fmjl</code> from the repository). It has eleven commands:</p>
 <table>
 <thead>
 <tr>
@@ -1338,9 +1338,13 @@ Page 1
 <td><code>fmjl chunks notes.fmjl</code></td>
 <td>Prints retriever-ready chunks (section 12.1) as JSON Lines</td>
 </tr>
+<tr>
+<td><code>fmjl export notes.fmjl --to docx</code></td>
+<td>Writes the document as clean Markdown, HTML, PDF, Word, OpenDocument, or EPUB</td>
+</tr>
 </tbody>
 </table>
-<p>It needs Python and one package, <code>pip install jsonschema</code>; the PDF importer also needs <code>pip install pymupdf</code>. From Python, <code>import fmjl</code> gives <code>load</code>, <code>save</code>, <code>chunks</code>, <code>changed_chunks</code>, and <code>check</code>. The VS Code extension <code>rupakkumar.fmjl</code> converts between both forms without Python and checks every rule while typing. Tools in other languages are welcome; they follow this rulebook, not the Python tool.</p>
+<p>It needs Python and one package, <code>pip install jsonschema</code>; the PDF importer also needs <code>pip install pymupdf</code>. Export writes what a reader sees: noise is left out, parts linked with <code>continues</code> become one paragraph again, merged-cell tables keep their spans, and formulas become equations where the format has them. Ids, hashes, <code>page</code>, <code>bbox</code>, and <code>access</code> exist only in FMJL and are not exported. PDF export needs <code>pip install pymupdf</code>; Word, OpenDocument, and EPUB need pandoc. From Python, <code>import fmjl</code> gives <code>load</code>, <code>save</code>, <code>chunks</code>, <code>changed_chunks</code>, and <code>check</code>. The VS Code extension <code>rupakkumar.fmjl</code> converts between both forms without Python and checks every rule while typing. Tools in other languages are welcome; they follow this rulebook, not the Python tool.</p>
 <h2 id="17-version-history">17. Version History</h2>
 <ol>
 <li>Version 0.1: first draft, with the extension <code>.jsonl</code>.</li>
@@ -1349,7 +1353,7 @@ Page 1
 <li>Version 0.4: the format is named FMJL, short for Format, Markdown, JSON Lines; the placeholder name &quot;Format X&quot; is retired; the license is MIT. No rules changed, so 0.3 files stay valid.</li>
 <li>Version 0.5: merged cells can be written in a Markdown table with <code>^</code> and <code>&lt;</code>, and tool-written HTML has one canonical form (sections 8 and 9.2); <code>above</code> and <code>below</code> in notes (9.3); the group title explained (9.4); the <code>md</code> form of footnotes (7.5); <code>fmjl.</code> names reserved in <code>meta</code> (7.6); importer rules (10.1); chunks defined (12.1); the tool warns about a table typed without its separator row; the <code>pdf</code>, <code>docx</code>, and <code>chunks</code> commands. No 0.4 file becomes invalid, so <code>fmjl upgrade</code> only changes the version.</li>
 <li>Version 1.0: the first stable version. No rules changed since 0.5. The <code>fmjl</code> package is on PyPI, the extension on the Marketplace, <code>fmjl.exe</code> on the GitHub release, and this rulebook on the website. From 1.0 on, every 1.x reader reads every 1.x file (section 13).</li>
-<li>Version 1.1: importer rules for books and scans, written after converting a 345-page scanned novel and checking five more books (10.1, rules 11 to 20): running headers with changing page numbers are noise, a paragraph split into blocks by the text layer is one element, page-break continuations are found from the layout, chapter lines become headings, missing spaces in OCR text layers are restored, real hyphens are kept, drop caps rejoin their paragraph, sidebars are read as their own stream, and Word text boxes, hidden text, symbols and list levels are handled. <code>fmjl.body</code> marks where the front matter ends (7.6). Parts linked with <code>continues</code> form one chunk, and front matter is not chunked by default (12.1). The <code>pdf</code> and <code>docx</code> commands write only the storage form; <code>--md</code> adds the authoring form. No 1.0 file becomes invalid, so <code>fmjl upgrade</code> only changes the version.</li>
+<li>Version 1.1: importer rules for books and scans, written after converting a 345-page scanned novel and checking five more books (10.1, rules 11 to 20): running headers with changing page numbers are noise, a paragraph split into blocks by the text layer is one element, page-break continuations are found from the layout, chapter lines become headings, missing spaces in OCR text layers are restored, real hyphens are kept, drop caps rejoin their paragraph, sidebars are read as their own stream, and Word text boxes, hidden text, symbols and list levels are handled. <code>fmjl.body</code> marks where the front matter ends (7.6). Parts linked with <code>continues</code> form one chunk, and front matter is not chunked by default (12.1). The <code>pdf</code> and <code>docx</code> commands write only the storage form; <code>--md</code> adds the authoring form. The <code>export</code> command and <code>fmjl --version</code> are new. No 1.0 file becomes invalid, so <code>fmjl upgrade</code> only changes the version.</li>
 </ol>
 <p>Moving from 0.2 to 0.3: run <code>fmjl upgrade</code>. Some <code>md</code> texts change once into canonical form, so their hashes change and those elements are embedded again once.</p>
 <h2 id="18-not-decided-yet">18. Not Decided Yet</h2>

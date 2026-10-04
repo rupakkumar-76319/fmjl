@@ -15,9 +15,10 @@ FMJL, short for Format, Markdown, JSON Lines, stores a document as one JSON obje
 
     fmjl notes.md               # Markdown  -> notes.fmjl, then checks it
     fmjl notes.fmjl             # .fmjl     -> notes.md, ids kept
-    fmjl report.pdf             # PDF       -> report.fmjl, report.md, images/
+    fmjl report.pdf             # PDF       -> report.fmjl and images/ (--md adds report.md)
     fmjl report.docx            # Word      -> the same
     fmjl chunks report.fmjl     # retriever-ready chunks as JSON Lines
+    fmjl export report.fmjl --to docx   # also md, html, pdf, odt, epub
 
 From Python: `import fmjl`; `fmjl.load`, `fmjl.chunks`, `fmjl.changed_chunks`, `fmjl.check`.
 
@@ -39,6 +40,7 @@ dependencies = ["jsonschema>=4"]
 
 [project.optional-dependencies]
 pdf = ["pymupdf>=1.24"]
+export = ["markdown-it-py>=3", "pymupdf>=1.24"]
 
 [project.scripts]
 fmjl = "fmjl:main"
