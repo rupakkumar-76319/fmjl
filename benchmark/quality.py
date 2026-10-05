@@ -10,7 +10,8 @@ nothing about a particular document:
 
   words lost          words of the PDF's text layer that are missing from the output
   word order          pages whose words come out in a different order than in the PDF
-  glued words         a rare word that is two common words of the same document joined
+  glued words         a rare word that is two common words of the same document joined,
+                      where the document also writes those two words side by side
   split mid-sentence  two paragraphs on one page where the first stops mid-sentence and
                       the second starts in lower case
   page-break cuts     the same across a page break, without continues
@@ -67,12 +68,14 @@ def check(pdf_path, rows, show=4):
     add("words lost", sum(lost.values()), sum(pdf_words.values()) or 1,
         [f"{w} x{c}" for w, c in lost.most_common(show)])
 
+    seq = [w for e in els for w in _words(e.get("md", ""))]
+    pairs = collections.Counter(zip(seq, seq[1:]))
     glued = []
     for w, c in out_words.items():
         if c > 2 or len(w) < 5:
             continue
         for k in range(2, len(w) - 1):
-            if out_words[w[:k]] >= 20 and out_words[w[k:]] >= 20:
+            if out_words[w[:k]] >= 20 and out_words[w[k:]] >= 20 and pairs[(w[:k], w[k:])] >= 5:
                 glued.append(f"{w} = {w[:k]} {w[k:]}")
                 break
     add("glued words", len(glued), len(out_words) or 1, glued)

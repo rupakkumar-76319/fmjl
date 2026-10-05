@@ -191,13 +191,18 @@ def to_pandoc(rows, base, out, fmt):
         raise RuntimeError("pandoc: " + done.stderr.decode("utf-8", "replace").strip())
 
 
-def export(path, fmt, out=None):
-    """Writes the .fmjl at path as fmt; returns the output path."""
+def export(path, fmt, out=None, force=False):
+    """Writes the .fmjl at path as fmt; returns the output path. An existing file is never
+    replaced without force: the default name is often the original the .fmjl came from."""
     path = Path(path)
     rows = fmjl.read_rows(path)
     out = Path(out) if out else path.with_suffix("." + fmt)
     if out.resolve() == path.resolve():
         raise ValueError("the output would replace the .fmjl itself")
+    if out.exists() and not force:
+        source = rows[0].get("source")
+        what = "the original this .fmjl was made from" if source and out.name == source else "a file"
+        raise ValueError(f"{out} already exists ({what}); choose another name with -o, or add --force to replace it")
     base = path.parent
     if fmt == "md":
         fmjl.write_text(out, to_md(rows, base, out.parent))
@@ -218,9 +223,10 @@ def main(argv=None):
     ap.add_argument("file")
     ap.add_argument("--to", required=True, choices=FORMATS)
     ap.add_argument("-o", "--output", help="output file (default: same name, new extension)")
+    ap.add_argument("--force", action="store_true", help="replace the output file if it exists")
     a = ap.parse_args(argv)
     try:
-        out = export(a.file, a.to, a.output)
+        out = export(a.file, a.to, a.output, a.force)
     except (ValueError, OSError, RuntimeError, ImportError) as e:
         print(f"error: {e}")
         return 2

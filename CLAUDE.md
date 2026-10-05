@@ -9,7 +9,8 @@ fmjl/            the Python package: __init__.py (converter, checker, chunks), p
 rulebook/        the specification in both forms; the .fmjl is the master
 examples/        sample documents (Markdown, PDF, Word), images/, rag_demo.py, sources/ (sample generators)
 fmjl-vscode/       the VS Code extension (published as rupakkumar.fmjl); src/converter.js is a JavaScript port of the package
-benchmark/       the same document in four formats, scored; results.json
+benchmark/       the same document in four formats, scored; results.json; quality.py checks any PDF conversion
+tests/           unittest suite: python -m unittest discover -s tests
 docs/            the GitHub Pages site: index.html, rulebook.html (built by docs/build.py), style.css
 project/         CHECKLIST.md (the stages of the project) and NOTES.md (findings for the next rulebook)
 archive/         older rulebooks and extension packages
@@ -38,6 +39,8 @@ fmjl report.docx                  # Word importer
 fmjl chunks notes.fmjl --by section
 python benchmark\benchmark.py
 cd fmjl-vscode; npm test            # converter vs Python, byte for byte
+python -m unittest discover -s tests   # importers, book rules, Word features, export
+python benchmark\quality.py some.pdf   # compare a PDF with its conversion before trusting it
 python docs\build.py              # rebuild docs/rulebook.html from the rulebook
 python -m build                   # wheel and sdist into dist/
 ```

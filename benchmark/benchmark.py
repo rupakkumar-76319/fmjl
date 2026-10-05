@@ -509,12 +509,14 @@ def importers():
     import shutil
     import tempfile
     out = {}
-    samples = [("PDF (examples/solar_report.pdf)", "pdf"), ("Word (examples/maintenance_guide.docx)", "docx")]
+    import importlib
+    samples = [("PDF (examples/solar_report.pdf)", "pdf", "solar_report.pdf"),
+               ("Word (examples/maintenance_guide.docx)", "docx", "maintenance_guide.docx")]
     tmp = Path(tempfile.mkdtemp(prefix="fmjl-bench-"))
-    for label, kind in samples:
-        src = next(HERE.parent.glob(f"examples/*.{kind}"))
+    for label, kind, name in samples:
+        src = HERE.parent / "examples" / name
         try:
-            mod = __import__("fmjl_" + kind)
+            mod = importlib.import_module("fmjl." + kind)
         except ImportError as e:
             out[label] = {"importer available": f"no ({e})"}
             continue

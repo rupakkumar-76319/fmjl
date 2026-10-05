@@ -198,7 +198,8 @@ rulebook/        the specification, version 1.1, in both forms
 docs/            the website, https://rupakkumar-76319.github.io/fmjl/ : introduction and rulebook
 examples/        sample documents (Markdown, PDF, Word) with their images/, rag_demo.py, and the sample generators
 fmjl-vscode/     the VS Code extension: convert, syntax coloring and live checking
-benchmark/       the same document in FMJL, Markdown, JSON and LaTeX, and the scores
+benchmark/       the same document in FMJL, Markdown, JSON and LaTeX, the scores, and quality.py
+tests/           the test suite: python -m unittest discover -s tests
 project/         the checklist of stages and the notes for the next rulebook
 archive/         older versions of the rulebook and the extension
 ```
@@ -230,6 +231,25 @@ chunker (rulebook 10.1, rules 11 to 19, and 12.1). The same book, converted by 1
 Five more books were checked with `python benchmark/quality.py`, which compares any PDF with
 its conversion; it found and fixed margin quotes read across the text, lost hyphens, missed
 chapter headers and drop caps. Run it on a new kind of PDF before trusting the conversion.
+
+## Does it find answers better?
+
+Measured with questions whose answer sentence is known, comparing FMJL chunks
+(`fmjl chunks --by section`) with the same text cut into equal pieces. A hit means the answer
+was in one of the top 5 chunks returned.
+
+| Documents | Search | Plain text, 1,000 characters | Plain text, 1,500 characters | FMJL by section |
+| --- | --- | --- | --- | --- |
+| Structured: this rulebook, two non-fiction books (42 questions) | Keyword (BM25) | 83% | 88% | **95%** |
+| Structured, same 42 questions | Embeddings (all-mpnet-base-v2) | 69% | 55% | **79%** |
+| A novel, running prose (18 questions) | Embeddings | 50% | 67% | 67% |
+
+On documents with tables, headings and lists, FMJL is clearly ahead: whole tables, list items
+and sections stay together, and no answer is cut in two (equal pieces of 1,000 characters cut 4
+of the 42). On running prose it is level with plain text; there its gain is what comes with each
+chunk: the page to cite, the chapter path, stable ids, and re-embedding only what changed. The
+questions are few and were written by the project, so take these as a signal; the details are in
+`project/NOTES.md`.
 
 ## Author and license
 

@@ -196,16 +196,19 @@ rows = fmjl.load("report.fmjl")
 for chunk in fmjl.chunks(rows, by="section"):
     embed(chunk["text"], metadata={"id": chunk["id"], "page": chunk.get("page"), "access": chunk["access"]})</code></pre>
 
+<p>Does it find answers better? On 42 questions about three documents with tables, headings and lists, the answer was in the top five chunks 95% of the time with FMJL sections against 88% for the same text cut into equal pieces (keyword search), and 79% against 69% with embeddings. On a novel, where there is no structure to keep, the two are level. Details are in the README.</p>
+
 <h2>Tools</h2>
 
 <div class="two">
 <div>
-<p><strong>Python package.</strong> <code>pip install fmjl</code> gives the <code>fmjl</code> command: convert both ways, check every rule, import PDF and Word files, and print retriever chunks. <code>pip install "fmjl[pdf]"</code> adds the PDF importer.</p>
+<p><strong>Python package.</strong> <code>pip install fmjl</code> gives the <code>fmjl</code> command: convert both ways, check every rule, import PDF and Word files, print retriever chunks, and export to other formats. <code>pip install "fmjl[pdf]"</code> adds the PDF importer; <code>"fmjl[export]"</code> adds HTML and PDF export.</p>
 <pre><code>fmjl notes.md
 fmjl notes.fmjl
 fmjl report.pdf
 fmjl report.docx
-fmjl chunks report.fmjl --by section</code></pre>
+fmjl chunks report.fmjl --by section
+fmjl export report.fmjl --to docx</code></pre>
 </div>
 <div>
 <p><strong>VS Code extension.</strong> Search for FMJL in the Extensions view (publisher rupakkumar). It converts both ways without Python, colors <code>.fmjl</code> files, and underlines every rule violation while you type.</p>

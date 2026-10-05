@@ -1858,6 +1858,7 @@ def main(argv=None):
             p.add_argument("--md", action="store_true", help="also write the .md authoring form")
         if name == "export":
             p.add_argument("--to", required=True, choices=("md", "html", "pdf", "docx", "odt", "epub"))
+            p.add_argument("--force", action="store_true", help="replace the output file if it exists")
         if name == "chunks":
             p.add_argument("--by", choices=("element", "section"), default="element")
             p.add_argument("--max-chars", type=int, default=0, help="split sections longer than this")
@@ -1869,7 +1870,7 @@ def main(argv=None):
     path = Path(a.file)
     if a.cmd == "export":
         from fmjl import export as exporter
-        return exporter.main([str(path), "--to", a.to] + (["-o", a.output] if a.output else []))
+        return exporter.main([str(path), "--to", a.to] + (["-o", a.output] if a.output else []) + (["--force"] if a.force else []))
     if a.cmd in ("pdf", "docx"):
         try:
             import importlib
