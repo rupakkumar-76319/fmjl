@@ -73,3 +73,16 @@ Run `python benchmark/quality.py some.pdf` on every new kind of PDF before trust
 | FMJL 1.1, by section | 7 | 12 | 9 |
 
 1.1 is far better than 1.0 (top-5 from 8 to 12). Against plain text cut into 1,500-character pieces it is level on this novel: 12 against 12 at top-5, 7 against 6 at top-1. With 18 questions one question is 5.5 points, so the two are within noise. FMJL's advantage over plain pieces is not accuracy on running prose but what comes with each chunk: the page and position to cite, the chapter path, stable ids, and re-embedding only what changed. Still to test: documents with tables, headings and lists, where plain pieces cut through structure.
+
+## Search test on structured documents (2026-10-05)
+
+42 questions on three documents with tables, headings and lists: this rulebook (answers mostly in table rows, 16 questions), Hooked (lists and named sections, 15) and Psychology 101 (101 short chapters, 11). Same method as the Persuasion test; FMJL chunks include the front matter here so both sides see the same text.
+
+| Chunks | BM25 top-1 | BM25 top-5 | Embedding top-1 | Embedding top-5 |
+| --- | --- | --- | --- | --- |
+| Plain text, 1,000-character pieces | 52% | 83% | 43% | 69% |
+| Plain text, 1,500-character pieces | 60% | 88% | 26% | 55% |
+| FMJL by element | 45% | 79% | 31% | 67% |
+| FMJL by section (1,500) | **67%** | **95%** | **43%** | **79%** |
+
+On structured documents FMJL by section is ahead in every column it does not tie: top-5 is 95% against 88% with keyword search and 79% against 69% with embeddings, the best plain setting in each case. Plain pieces also cut 4 of the 42 answers in two at 1,000 characters; FMJL sections keep all 42 whole. One element per chunk is the weakest setting: single list items and table rows carry too little text. Use `--by section`.
