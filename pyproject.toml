@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fmjl"
-version = "1.1.2"
+dynamic = ["version"]
 description = "FMJL (.fmjl): one document, two forms. JSON Lines container, Markdown text, LaTeX formulas, HTML merged-cell tables, built for RAG. Converter, checker, PDF and Word importers, retriever chunks."
 readme = { text = """# FMJL
 
@@ -52,3 +52,6 @@ Issues = "https://github.com/rupakkumar-76319/fmjl/issues"
 
 [tool.setuptools]
 packages = ["fmjl"]
+
+[tool.setuptools.dynamic]
+version = { attr = "fmjl.__version__" }

@@ -50,6 +50,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 VERSION = "1.1"
+__version__ = "1.1.2"
 CONVERTER = "fmjl 1.1"
 
 TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
@@ -1824,18 +1825,10 @@ def _short_form(argv):
     return [cmd, argv[0]] + rest
 
 
-def _package_version():
-    try:
-        from importlib.metadata import version
-        return version("fmjl")
-    except Exception:
-        return VERSION
-
-
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="fmjl", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--version", action="version", version=f"fmjl {_package_version()} (rulebook {VERSION})")
+    ap.add_argument("--version", action="version", version=f"fmjl {__version__} (rulebook {VERSION})")
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, help_ in [("new", "authoring form (.md) -> storage form (.fmjl)"),
                         ("md", "storage form (.fmjl) -> authoring form (.md)"),

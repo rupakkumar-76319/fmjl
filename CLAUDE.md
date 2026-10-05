@@ -27,7 +27,7 @@ README.md        an FMJL document itself; README.fmjl is regenerated from it wit
 6. Commits are made by the project owner. Never add Co-Authored-By or any AI attribution line to a commit message.
 7. Never store secrets in the repository: the Marketplace token, the PyPI token, API keys. Never copy personal documents into `examples/` or anywhere else in the repository; use generated samples (`examples/sources/`).
 8. Page numbers start at 0 in files and are shown to people as page plus 1. `bbox` is `[left, top, right, bottom]` in 0..1000.
-9. Versions move together: rulebook version, `VERSION` and `CONVERTER` in `fmjl/__init__.py` and `fmjl-vscode/src/converter.js`, the package version in `pyproject.toml`, and the extension version in `fmjl-vscode/package.json`. Section 17 of the rulebook lists every change.
+9. Versions move together: rulebook version, `VERSION` and `CONVERTER` in `fmjl/__init__.py` and `fmjl-vscode/src/converter.js`, the package version `__version__` in `fmjl/__init__.py` (`pyproject.toml` reads it from there), and the extension version in `fmjl-vscode/package.json`. Section 17 of the rulebook lists every change.
 
 ## Everyday commands
 
