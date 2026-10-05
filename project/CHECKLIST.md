@@ -228,7 +228,8 @@ pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --h
 - [x] Committed, tagged `v1.1.0` and pushed; PyPI has 1.1.0 (2026-10-04)
 - [x] Extension 1.1.0 on the Marketplace (2026-10-04)
 - [x] Word importer: text boxes, hidden text, list levels, symbols (rule 20); `fmjl export` to md, html, pdf, docx, odt, epub; `fmjl --version`
-- [ ] PyPI 1.1.1: the 1.1.0 upload was made before `export` and `--version`; `python -m twine upload dist/fmjl-1.1.1*`
+- [x] PyPI 1.1.1 with `export` and `--version` (2026-10-05)
+- [ ] PyPI 1.1.2 with the export overwrite guard: `python -m twine upload dist/fmjl-1.1.2*`
 - [x] Search test on structured documents (NOTES.md); results in README and on the website
 - [x] `tests/` unittest suite run by CI; benchmark importers fixed; quality check without false glued-word alarms
 - [x] `fmjl export` never replaces an existing file (often the original) without `--force`
