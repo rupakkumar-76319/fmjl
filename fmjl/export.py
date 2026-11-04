@@ -114,7 +114,10 @@ def to_html(rows, base=".", embed=True, dollars=False):
     """One HTML page. With embed, images are put inside the page; otherwise they are linked
     relative to base. With dollars, formulas are written as $...$ for pandoc's
     tex_math_dollars; otherwise as the math spans MathJax reads."""
-    from markdown_it import MarkdownIt
+    try:
+        from markdown_it import MarkdownIt
+    except ImportError:
+        raise RuntimeError('export needs markdown-it-py (pip install "fmjl[export]")') from None
     md = MarkdownIt("commonmark", {"html": True}).enable(["table", "strikethrough"])
     h = rows[0]
     title = h.get("title") or h.get("doc") or "Document"

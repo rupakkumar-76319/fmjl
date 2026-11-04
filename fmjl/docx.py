@@ -574,6 +574,14 @@ def import_docx(path, doc=None, out_dir=None):
         if text:
             add({"type": "noise", "subtype": "header", "md": text})
 
+    def add_footnotes(tokens, cited):
+        """One footnote element per footnote mark in the paragraph, each pointing at the element
+        the paragraph became (a list, a code block, a heading, or the image of an image-only
+        paragraph), never at an earlier footnote."""
+        for tok in tokens:
+            if tok[0] == "footnote" and cited is not None:
+                add({"type": "footnote", "md": f"[^{tok[1]}]: {docx.footnotes[tok[1]]}", "_cites": cited})
+
     list_run = None
     for child in _body_children(body):
         if child.tag == _w("tbl"):
@@ -603,6 +611,7 @@ def import_docx(path, doc=None, out_dir=None):
         if not text:
             if not images:
                 list_run = None
+            add_footnotes(tokens, els[-1] if images and els else None)
             continue
         li = _list_info(docx, child, sid, style_names)
         if level:
@@ -635,9 +644,7 @@ def import_docx(path, doc=None, out_dir=None):
         else:
             list_run = None
             add({"type": "paragraph", "md": text})
-        for tok in tokens:
-            if tok[0] == "footnote":
-                add({"type": "footnote", "md": f"[^{tok[1]}]: {docx.footnotes[tok[1]]}", "_cites": els[-1] if els[-1]["type"] != "footnote" else els[-2]})
+        add_footnotes(tokens, els[-1])
 
     for name in sorted(n for n in docx.names if re.match(r"word/footer\d*\.xml$", n)):
         root = docx.xml(name)

@@ -1,4 +1,8 @@
 # Changelog
+## 1.1.1
+- A `$$` line with text after the closing `$$`, or a `$$` block that is never closed, is a paragraph; it no longer swallows the rest of the document into one formula. Same for a paragraph starting with a word like `<tablet`, which is no longer read as a table. Both end at a blank line, as in Markdown.
+- Converting a `.md` with a bad note value (`page=abc`) reports the line: `line 5: page=abc is not a whole number`.
+- Matches the Python package 1.1.3 byte for byte.
 ## 1.1.0
 - Matches rulebook version 1.1. The converter writes `"version":"1.1"`; files written as 1.0 stay valid.
 - New command FMJL: Fill, also offered as a quick fix (light bulb) on every problem that `fmjl fill` repairs. Existing ids are kept.

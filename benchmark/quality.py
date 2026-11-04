@@ -125,6 +125,7 @@ def check(pdf_path, rows, show=4):
     holder, held = parents.most_common(1)[0] if parents else (None, 0)
     flat = int(held > 0.5 * len(els) and len(doc) > 20)
     add("flat structure", flat, 1, [f"{holder} holds {held} of {len(els)}; {len(heads)} headings"] if flat else [])
+    doc.close()
     return found
 
 

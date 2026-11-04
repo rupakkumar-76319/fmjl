@@ -174,6 +174,56 @@ class Export(Temp):
             self.assertTrue(export.export(EXAMPLES / "solar_report.fmjl", fmt, self.dir / f"s.{fmt}").stat().st_size > 0)
 
 
+class Converter(Temp):
+    """Blocks that must not swallow what follows them, and errors that must name their line."""
+
+    def types(self, text):
+        return [e["type"] for e in fmjl.import_md(text, doc="t")[1:]]
+
+    def test_formula_line_with_text_after_it_is_a_paragraph(self):
+        self.assertEqual(self.types("$$a$$ is the start of a sentence\n\nNext.\n\n# Heading"),
+                         ["paragraph", "paragraph", "heading"])
+
+    def test_unclosed_formula_block_ends_at_the_blank_line(self):
+        rows = fmjl.import_md("$$\nx = 1\n\nAfter.\n\n# Heading", doc="t")
+        self.assertEqual([e["type"] for e in rows[1:]], ["paragraph", "paragraph", "heading"])
+        self.assertEqual(rows[1]["md"], "$$\nx = 1")
+        back = fmjl.import_md(fmjl.export_md(rows), doc="t")
+        self.assertEqual([(e["id"], e["md"]) for e in back[1:]], [(e["id"], e["md"]) for e in rows[1:]])
+
+    def test_closed_formula_block_still_a_formula(self):
+        rows = fmjl.import_md("$$\nx = 1\n$$\n\nAfter.", doc="t")
+        self.assertEqual(rows[1]["type"], "formula")
+        self.assertEqual(rows[1]["latex"], "x = 1")
+
+    def test_word_starting_with_table_is_not_a_table(self):
+        self.assertEqual(self.types("<tablet> is a word\n\nNext.\n\n# Heading"), ["paragraph", "paragraph", "heading"])
+        self.assertEqual(self.types("<table>\n<tr><td>a</td></tr>\n</table>\n\nNext."), ["table", "paragraph"])
+
+    def test_bad_rowspan_is_reported_not_a_crash(self):
+        header = ('{"type":"document","version":"1.1","doc":"bad","source":"bad.md","sha256":"' + "0" * 64
+                  + '","protection":"none","signed":false,"converter":"fmjl 1.1","structure":false,"elements":1,'
+                  '"created":"2026-01-01T00:00:00Z","lang":"en","access":["all"],"last_id":1}')
+        row = ('{"id":"bad#e1","hash":"0000000000000000","type":"table","parent":null,"characters":1,'
+               '"html":"<table><tr><td rowspan=\\"x\\">a</td></tr></table>","md":"x"}')
+        path = self.dir / "bad.fmjl"
+        fmjl.write_text(path, header + "\n" + row + "\n")
+        errors = fmjl.check(path)
+        self.assertTrue(any("not canonical" in e for e in errors))
+
+    def test_note_error_names_the_line(self):
+        with self.assertRaisesRegex(ValueError, r"^line 5: page=abc is not a whole number"):
+            fmjl.import_md("---\ndoc: t\n---\n\n<!-- page=abc -->\nHello", doc="t")
+        with self.assertRaisesRegex(ValueError, r"^line 1: bbox=x is not a whole number"):
+            fmjl.import_md("<!-- bbox=1,2,x,4 -->\nHello", doc="t")
+
+    def test_section_chunk_keeps_its_heading_with_the_first_part(self):
+        rows = fmjl.import_md("# D\n\n" + "word " * 40 + "\n\n" + "more " * 40, doc="t")
+        out = fmjl.chunks(rows, by="section", max_chars=50)
+        self.assertEqual([c["id"] for c in out], ["t#e1/1", "t#e1/2"])
+        self.assertEqual(out[0]["elements"], ["t#e1", "t#e2"])
+
+
 class Version(unittest.TestCase):
     def test_version_flag(self):
         done = subprocess.run([sys.executable, "-m", "fmjl", "--version"], capture_output=True, text=True, cwd=ROOT)

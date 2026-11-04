@@ -13,6 +13,7 @@ import difflib
 import gzip
 import json
 import re
+import shutil
 import statistics
 import sys
 import time
@@ -482,6 +483,21 @@ def timed(fn, runs):
     return statistics.median(ts) * 1000
 
 
+def _keep_tokens(results, path):
+    """Without the tokenizer the token counts are None; then the counts of the last run stay in
+    results.json instead of being replaced by null."""
+    if not path.is_file():
+        return
+    try:
+        old = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    for name, scores in results.get("efficiency", {}).items():
+        for key, value in list(scores.items()):
+            if value is None and key.startswith("tokens"):
+                scores[key] = old.get("efficiency", {}).get(name, {}).get(key)
+
+
 def tokenizer():
     try:
         from anthropic._tokenizers import sync_get_tokenizer
@@ -551,6 +567,8 @@ def main():
     out_dir = HERE
     results = {"accuracy": {}, "speed": {}, "efficiency": {}, "stability": {}, "importers": {}}
     count = tokenizer()
+    if count is None:
+        print("no tokenizer available (pip install anthropic); token counts are kept from the last run")
     big_model = with_paths([copy.deepcopy(e) for _ in range(100) for e in TRUTH])
     content_chars = sum(len(s) for s in SENTENCES) + sum(len(e.get("text", "")) for e in TRUTH if e["type"] in ("heading", "caption")) \
         + len(F1) + len(F2) + sum(len(c) for r in TABLE for c in r) + len(ALT) + len(IMAGE) + len(AUTHOR)
@@ -559,7 +577,7 @@ def main():
     for name, (write, read, ext) in FORMATS.items():
         text = write(TRUTH)
         files[name] = text
-        (out_dir / f"solar_schools.{ext}").write_text(text, encoding="utf-8")
+        fmjl.write_text(out_dir / f"solar_schools.{ext}", text)
         got, meta = read(text)
         results["accuracy"][name] = score(got, meta)
 
@@ -646,7 +664,7 @@ def main():
         broken = old.replace("which accounts for losses", "which accounts for lossez", 1)
         if name == "FMJL":
             p = out_dir / "_corrupt.fmjl"
-            p.write_text(broken, encoding="utf-8")
+            fmjl.write_text(p, broken)
             detected = any("hash is wrong" in e for e in fmjl.check(p))
             p.unlink()
         else:
@@ -661,7 +679,10 @@ def main():
         }
 
     results["importers"] = importers()
-    (out_dir / "results.json").write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dir / "images").mkdir(exist_ok=True)
+    shutil.copyfile(HERE.parent / "examples" / IMAGE, out_dir / IMAGE)
+    _keep_tokens(results, out_dir / "results.json")
+    fmjl.write_text(out_dir / "results.json", json.dumps(results, indent=2, ensure_ascii=False))
     return results
 
 

@@ -210,7 +210,7 @@ pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --h
 - [x] Release artifacts built into `dist/` (wheel, sdist, `fmjl.exe`) and `fmjl-vscode/fmjl-1.0.0.vsix`
 - [x] Committed and tagged `v1.0.0`; PyPI has `fmjl` 1.0.0; the Marketplace has `rupakkumar.fmjl` 1.0.0 (2026-09-29)
 - [x] Python 3.9 fixes after the first CI run (`Path.write_text(newline=)` and PyMuPDF 1.26 `Rect.get_area`); package 1.0.1 built, tested on 3.9 and 3.13
-- [ ] Publish the fix: `git add -A`, `git commit -m "Python 3.9 and PyMuPDF 1.26 fixes; package 1.0.1"`, `git tag -f v1.0.0`, `git push origin main`, `git push -f origin v1.0.0`, then `twine upload dist/fmjl-1.0.1*`
+- [x] Publish the fix: `git add -A`, `git commit -m "Python 3.9 and PyMuPDF 1.26 fixes; package 1.0.1"`, `git tag -f v1.0.0`, `git push origin main`, `git push -f origin v1.0.0`, then `twine upload dist/fmjl-1.0.1*`
 
 - [x] GitHub release `v1.0.0` published 2026-09-30 with `fmjl.exe`, `fmjl-1.0.0.vsix` and both rulebook files attached
 - [x] GitHub Pages live at https://rupakkumar-76319.github.io/fmjl/ (introduction and rulebook)
@@ -229,12 +229,15 @@ pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --h
 - [x] Extension 1.1.0 on the Marketplace (2026-10-04)
 - [x] Word importer: text boxes, hidden text, list levels, symbols (rule 20); `fmjl export` to md, html, pdf, docx, odt, epub; `fmjl --version`
 - [x] PyPI 1.1.1 with `export` and `--version` (2026-10-05)
-- [ ] PyPI 1.1.2 with the export overwrite guard: `python -m twine upload dist/fmjl-1.1.2*`
+- [x] PyPI 1.1.2 with the export overwrite guard (2026-10-05)
 - [x] Search test on structured documents (NOTES.md); results in README and on the website
 - [x] `tests/` unittest suite run by CI; benchmark importers fixed; quality check without false glued-word alarms
 - [x] `fmjl export` never replaces an existing file (often the original) without `--force`
 - [x] `dist/fmjl.exe` rebuilt as 1.1.1
 - [ ] GitHub release `v1.1.0` with `fmjl.exe`, the `.vsix` and both rulebook files
+- [x] Review of 2026-10-31: a `$$` line or block without its closing `$$`, and a paragraph starting with `<tablet`, no longer swallow the rest of the document; `fmjl check` reports a table with `rowspan="x"` instead of crashing; note errors carry their line (`line 5: page=abc is not a whole number`); a section chunk never leaves its heading alone when `--max-chars` splits it; Word footnotes point at their paragraph even when it has three or more, and are kept in image-only paragraphs; the PDF importer and the quality check close their files; `export` names the missing package; the benchmark writes LF on Windows, copies `images/solar_panels.png` next to its sample, and keeps the last token counts without a tokenizer; `rag_demo.py` skips a second file with the same document name. Package `1.1.3`, extension `1.1.1`; tests in `tests/test_tools.py` (`Converter`)
+- [ ] PyPI 1.1.3: `python -m build` then `python -m twine upload dist/fmjl-1.1.3*`
+- [ ] Extension 1.1.1 (converter fix): `cd fmjl-vscode` then `npx @vscode/vsce package` and `npx @vscode/vsce publish`
 
 ---
 

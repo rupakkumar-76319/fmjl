@@ -2,7 +2,7 @@
   "name": "fmjl",
   "displayName": "FMJL",
   "description": "FMJL (.fmjl) documents: convert Markdown to FMJL and back, live error checking with one-click fixes, an outline of headings, hovers and go-to-definition for element ids. JSON Lines container, Markdown text, LaTeX formulas, HTML tables.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "rupakkumar",
   "author": {
     "name": "Rupak Kumar"

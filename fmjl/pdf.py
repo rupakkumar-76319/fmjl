@@ -1036,6 +1036,7 @@ def import_pdf(path, doc=None, out_dir=None, ocr=None):
             e["continues"] = prev["id"]
 
     meta = pdf.metadata or {}
+    pdf.close()
     h = {"type": "document", "doc": doc, "source": path.name, "converter": "fmjl pdf 1.1"}
     title = (meta.get("title") or "").strip()
     if not title:

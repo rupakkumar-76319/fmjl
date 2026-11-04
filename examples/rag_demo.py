@@ -69,13 +69,22 @@ def citation(c):
 
 
 def load_folder(folder):
-    out = []
+    """Chunks of every valid .fmjl in the folder. Two files with the same document name would
+    give the same ids, so the second one is skipped with a message."""
+    out, seen = [], {}
     for path in sorted(Path(folder).glob("*.fmjl")):
         errors = fmjl.check(path)
         if errors:
             print(f"skipping {path.name}: {errors[0]}")
             continue
-        out.extend(c for c in fmjl.chunks(fmjl.load(path)) if c["type"] != "heading")
+        rows = fmjl.load(path)
+        doc = rows[0].get("doc")
+        if doc in seen:
+            print(f"skipping {path.name}: its document name {doc} is already used by {seen[doc]}; "
+                  f"convert one of them again with --doc another_name")
+            continue
+        seen[doc] = path.name
+        out.extend(c for c in fmjl.chunks(rows) if c["type"] != "heading")
     return out
 
 

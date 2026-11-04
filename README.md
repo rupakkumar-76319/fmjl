@@ -83,7 +83,7 @@ with their citation, and asks Claude when the `anthropic` package and a key are 
 Two lines of the storage form, `notes.fmjl`:
 
 ```json
-{"type":"document","version":"1.0","doc":"notes","source":"notes.md","sha256":"...","protection":"none","signed":false,"converter":"fmjl 1.0","structure":true,"elements":2,"created":"2026-09-29T10:00:00Z","lang":"en","access":["all"],"last_id":2}
+{"type":"document","version":"1.1","doc":"notes","source":"notes.md","sha256":"...","protection":"none","signed":false,"converter":"fmjl 1.1","structure":true,"elements":2,"created":"2026-09-29T10:00:00Z","lang":"en","access":["all"],"last_id":2}
 {"id":"notes#e2","hash":"b91ad9f6b39e617a","type":"paragraph","parent":"notes#e1","page":0,"bbox":[80,110,920,170],"characters":105,"md":"This policy applies to all full-time employees from their first day of work."}
 ```
 

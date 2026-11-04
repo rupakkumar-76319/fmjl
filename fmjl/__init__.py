@@ -50,7 +50,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 VERSION = "1.1"
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 CONVERTER = "fmjl 1.1"
 
 TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
@@ -83,6 +83,7 @@ IMAGE_RE = re.compile(r"^!\[(.*)\]\((\S+?)\)$", re.S)
 NOTE_RE = re.compile(r"^\s*<!--\s*(.*?)\s*-->\s*$", re.S)
 SEP_CELL_RE = re.compile(r"^:?-+:?$")
 LINK_RE = re.compile(r"\]\(#([a-z0-9_-]+)\)")
+TABLE_TAG_RE = re.compile(r"^<table(\s|>)", re.I)
 
 SCHEMA = json.loads(r'''{
  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -644,6 +645,13 @@ def _sep_cell(cell):
     return (":" if left else "") + "---" + (":" if right else "")
 
 
+def _span(value):
+    """rowspan or colspan as a count, read like a browser: the leading whole number, and 1 when
+    there is none or it is 0. Never raises, so a hand-written table cannot crash the checker."""
+    m = re.match(r"\s*([+-]?\d+)", value or "")
+    return (int(m.group(1)) or 1) if m else 1
+
+
 class _TableParser(HTMLParser):
     """Turns <table> HTML into a grid of cell texts, repeating merged cells (rulebook 8.6)."""
 
@@ -657,7 +665,7 @@ class _TableParser(HTMLParser):
             self.row = []
         elif tag in ("td", "th") and self.row is not None:
             self.cell = []
-            self.span = (int(a.get("rowspan") or 1), int(a.get("colspan") or 1))
+            self.span = (_span(a.get("rowspan")), _span(a.get("colspan")))
         elif tag == "br" and self.cell is not None:
             self.cell.append(" ")
 
@@ -971,9 +979,9 @@ def _detect(block):
         return "heading"
     if FENCE_RE.match(block):
         return "code"
-    if s.startswith("|") or s.lower().startswith("<table"):
+    if s.startswith("|") or TABLE_TAG_RE.match(s):
         return "table"
-    if s.startswith("$$"):
+    if s.startswith("$$") and s.rstrip().endswith("$$") and len(s.strip()) >= 4:
         return "formula"
     if "\n" not in block.strip() and IMAGE_RE.match(block.strip()):
         return "image"
@@ -999,18 +1007,23 @@ def _read_block(lines, i):
                 return "\n".join(lines[i:j + 1]), j + 1
             j += 1
         return "\n".join(lines[i:]), len(lines)
-    if s.lower().startswith("<table"):
+    if TABLE_TAG_RE.match(s):
         j = i
-        while j < len(lines) and "</table>" not in lines[j].lower():
+        while j < len(lines) and lines[j].strip() and "</table>" not in lines[j].lower():
             j += 1
-        return "\n".join(lines[i:j + 1]), j + 1
+        if j < len(lines) and lines[j].strip():
+            return "\n".join(lines[i:j + 1]), j + 1
+        return "\n".join(lines[i:j]), j
     if s.startswith("$$"):
         if len(s.strip()) >= 4 and s.strip().endswith("$$"):
             return ln, i + 1
         j = i + 1
-        while j < len(lines) and not lines[j].rstrip().endswith("$$"):
+        while j < len(lines) and lines[j].strip() and not _parse_note(lines[j]) \
+                and not lines[j].rstrip().endswith("$$"):
             j += 1
-        return "\n".join(lines[i:j + 1]), j + 1
+        if j < len(lines) and lines[j].strip() and lines[j].rstrip().endswith("$$"):
+            return "\n".join(lines[i:j + 1]), j + 1
+        return "\n".join(lines[i:j]), j
     if HEADING_RE.match(s):
         return ln, i + 1
     j = i + 1
@@ -1088,16 +1101,33 @@ def _ref(value, doc):
     return doc + "#" + value if SHORT_ID_RE.match(value) else value
 
 
+def _int(val, key):
+    s = str(val).strip()
+    if not re.match(r"^[+-]?\d+$", s):
+        raise ValueError(f"{key}={val} is not a whole number")
+    return int(s)
+
+
+def _float(val, key):
+    try:
+        n = float(val)
+    except ValueError:
+        n = float("nan")
+    if n != n or n in (float("inf"), float("-inf")):
+        raise ValueError(f"{key}={val} is not a number")
+    return n
+
+
 def _apply_note(row, attrs, doc):
     for key, val in attrs.items():
         if key in ("_id", "type"):
             continue
         if key == "page":
-            row["page"] = int(val)
+            row["page"] = _int(val, key)
         elif key in ("pages", "bbox"):
-            row[key] = [int(v) for v in val.split(",") if v != ""]
+            row[key] = [_int(v, key) for v in val.split(",") if v != ""]
         elif key == "confidence":
-            row["confidence"] = float(val)
+            row["confidence"] = _float(val, key)
         elif key == "access":
             row["access"] = [v for v in val.split(",") if v]
         elif key == "reference":
@@ -1106,7 +1136,7 @@ def _apply_note(row, attrs, doc):
         elif key in ("continues", "parent"):
             row[key] = None if val == "null" else _ref(val, doc)
         elif key == "level":
-            row["level"] = int(val)
+            row["level"] = _int(val, key)
         else:
             row[key] = val
 
@@ -1127,7 +1157,7 @@ def _make_element(block, attrs, doc):
         latex = _strip_dollars(block)
         row["latex"] = latex
         md = "$$" + latex + "$$"
-    elif t == "table" and block.lstrip().lower().startswith("<table"):
+    elif t == "table" and TABLE_TAG_RE.match(block.lstrip()):
         row["html"] = block.strip()
         md = html_table_to_md(row["html"])
     elif t == "table" and detected == "table":
@@ -1168,6 +1198,14 @@ def import_md(text, doc=None, source=None, base=None, warnings=None):
     lines = body.split("\n")
     els, tracker, groups = [], _Parents(), []
     pending, pending_group = None, None
+    pending_line = group_line = 0
+
+    def element(block, attrs, line):
+        try:
+            return _make_element(block, attrs, doc)
+        except ValueError as e:
+            raise ValueError(f"line {offset + line + 1}: {e}") from None
+
     i = 0
     while i < len(lines):
         ln = lines[i]
@@ -1177,9 +1215,10 @@ def import_md(text, doc=None, source=None, base=None, warnings=None):
         note = _parse_note(ln)
         if note:
             kind, attrs = note
+            note_line = i
             i += 1
             if kind == "group":
-                pending_group = attrs
+                pending_group, group_line = attrs, note_line
             elif kind == "endgroup":
                 if groups:
                     groups.pop()
@@ -1188,11 +1227,11 @@ def import_md(text, doc=None, source=None, base=None, warnings=None):
                 name = attrs.get("_id") or attrs.get("label")
                 j = _find_end(lines, i, name) if name else None
                 if j is not None:
-                    row = _make_element("\n".join(lines[i:j]).strip("\n"), attrs, doc)
+                    row = element("\n".join(lines[i:j]).strip("\n"), attrs, note_line)
                     _place(row, tracker, els)
                     i = j + 1
                 else:
-                    pending = attrs
+                    pending, pending_line = attrs, note_line
             continue
         start = i
         block, i = _read_block(lines, i)
@@ -1202,7 +1241,7 @@ def import_md(text, doc=None, source=None, base=None, warnings=None):
                             "start of each row or without the separator row (| --- |); it was read as a paragraph")
         if pending_group is not None:
             attrs, pending_group = pending_group, None
-            row = _make_element(block, dict(attrs, type="group"), doc)
+            row = element(block, dict(attrs, type="group"), group_line)
             row["md"] = block.strip()
             for k in ("file", "latex", "html", "level"):
                 row.pop(k, None)
@@ -1210,7 +1249,7 @@ def import_md(text, doc=None, source=None, base=None, warnings=None):
             tracker.open_group(row)
             groups.append(row)
         else:
-            row = _make_element(block, pending or {}, doc)
+            row = element(block, pending or {}, pending_line if pending else start)
             pending = None
             _place(row, tracker, els)
 
@@ -1699,7 +1738,7 @@ def chunks(rows, by="element", max_chars=0, front=False):
         groups = []
         for e in members:
             n = len(e.get("md", ""))
-            if parts and max_chars and size + n > max_chars:
+            if parts and max_chars and size + n > max_chars and not (len(parts) == 1 and parts[0] is head):
                 groups.append(parts)
                 parts, size = [], 0
             parts.append(e)

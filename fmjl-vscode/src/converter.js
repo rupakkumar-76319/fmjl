@@ -27,6 +27,7 @@ const FENCE_RE = /^ {0,3}(`{3,}|~{3,})/;
 const IMAGE_RE = /^!\[([\s\S]*)\]\((\S+?)\)$/;
 const NOTE_RE = /^\s*<!--\s*([\s\S]*?)\s*-->\s*$/;
 const SEP_CELL_RE = /^:?-+:?$/;
+const TABLE_TAG_RE = /^<table(\s|>)/i;
 const QUOTE_STARTS = "\"'[{#&*!|>%@`";
 
 const FLOAT = Symbol("float");
@@ -482,8 +483,8 @@ function detect(block) {
   const s = lstrip(block);
   if (HEADING_RE.test(s)) return "heading";
   if (FENCE_RE.test(block)) return "code";
-  if (s.startsWith("|") || s.toLowerCase().startsWith("<table")) return "table";
-  if (s.startsWith("$$")) return "formula";
+  if (s.startsWith("|") || TABLE_TAG_RE.test(s)) return "table";
+  if (s.startsWith("$$") && rstrip(s).endsWith("$$") && s.trim().length >= 4) return "formula";
   if (!block.trim().includes("\n") && IMAGE_RE.test(block.trim())) return "image";
   if (s.startsWith(">")) return "quote";
   if (/^([-*+]|\d+[.)])\s/.test(s)) return "list";
@@ -507,16 +508,18 @@ function readBlock(lines, i) {
     }
     return [lines.slice(i).join("\n"), lines.length];
   }
-  if (s.toLowerCase().startsWith("<table")) {
+  if (TABLE_TAG_RE.test(s)) {
     let j = i;
-    while (j < lines.length && !lines[j].toLowerCase().includes("</table>")) j += 1;
-    return [lines.slice(i, j + 1).join("\n"), j + 1];
+    while (j < lines.length && lines[j].trim() && !lines[j].toLowerCase().includes("</table>")) j += 1;
+    if (j < lines.length && lines[j].trim()) return [lines.slice(i, j + 1).join("\n"), j + 1];
+    return [lines.slice(i, j).join("\n"), j];
   }
   if (s.startsWith("$$")) {
     if (s.trim().length >= 4 && s.trim().endsWith("$$")) return [ln, i + 1];
     let j = i + 1;
-    while (j < lines.length && !rstrip(lines[j]).endsWith("$$")) j += 1;
-    return [lines.slice(i, j + 1).join("\n"), j + 1];
+    while (j < lines.length && lines[j].trim() && !parseNote(lines[j]) && !rstrip(lines[j]).endsWith("$$")) j += 1;
+    if (j < lines.length && lines[j].trim() && rstrip(lines[j]).endsWith("$$")) return [lines.slice(i, j + 1).join("\n"), j + 1];
+    return [lines.slice(i, j).join("\n"), j];
   }
   if (HEADING_RE.test(s)) return [ln, i + 1];
   let j = i + 1;
@@ -641,7 +644,7 @@ function makeElement(block, attrs, doc) {
     const latex = stripDollars(block);
     row.latex = latex;
     md = "$$" + latex + "$$";
-  } else if (t === "table" && lstrip(block).toLowerCase().startsWith("<table")) {
+  } else if (t === "table" && TABLE_TAG_RE.test(lstrip(block))) {
     row.html = block.trim();
     md = htmlTableToMd(row.html);
   } else if (t === "table" && detected === "table") {
@@ -688,6 +691,15 @@ function importMd(text, opts) {
   const groups = [];
   let pending = null;
   let pendingGroup = null;
+  let pendingLine = 0;
+  let groupLine = 0;
+  const element = (block, attrs, line) => {
+    try {
+      return makeElement(block, attrs, doc);
+    } catch (e) {
+      throw new Error("line " + (offset + line + 1) + ": " + e.message);
+    }
+  };
   let i = 0;
   while (i < lines.length) {
     const ln = lines[i];
@@ -698,9 +710,11 @@ function importMd(text, opts) {
     const note = parseNote(ln);
     if (note) {
       const [kind, attrs] = note;
+      const noteLine = i;
       i += 1;
       if (kind === "group") {
         pendingGroup = attrs;
+        groupLine = noteLine;
       } else if (kind === "endgroup") {
         if (groups.length) {
           groups.pop();
@@ -710,11 +724,12 @@ function importMd(text, opts) {
         const name = attrs._id || attrs.label;
         const j = name ? findEnd(lines, i, name) : null;
         if (j !== null) {
-          const row = makeElement(stripNl(lines.slice(i, j).join("\n")), attrs, doc);
+          const row = element(stripNl(lines.slice(i, j).join("\n")), attrs, noteLine);
           place(row, tracker, els);
           i = j + 1;
         } else {
           pending = attrs;
+          pendingLine = noteLine;
         }
       }
       continue;
@@ -730,14 +745,14 @@ function importMd(text, opts) {
     if (pendingGroup !== null) {
       const attrs = Object.assign({}, pendingGroup, { type: "group" });
       pendingGroup = null;
-      const row = makeElement(block, attrs, doc);
+      const row = element(block, attrs, groupLine);
       row.md = block.trim();
       for (const k of ["file", "latex", "html", "level"]) delete row[k];
       place(row, tracker, els);
       tracker.openGroup(row);
       groups.push(row);
     } else {
-      const row = makeElement(block, pending || {}, doc);
+      const row = element(block, pending || {}, pending ? pendingLine : start);
       pending = null;
       place(row, tracker, els);
     }
