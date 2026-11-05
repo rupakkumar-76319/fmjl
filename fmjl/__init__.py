@@ -20,7 +20,7 @@ Commands (fmjl = the installed command, or: python -m fmjl):
   fmjl view notes.fmjl               print the document as clean Markdown
   fmjl info notes.fmjl               print title, element counts and an outline
   fmjl upgrade old.fmjl              turn a version 0.1 to 1.0 file into 1.1
-  fmjl pdf report.pdf                PDF -> report.fmjl and images/ (--md adds report.md; pip install pymupdf)
+  fmjl pdf report.pdf                PDF -> report.fmjl and images/ (--md adds report.md; pip install "pymupdf<2")
   fmjl docx report.docx              Word -> report.fmjl and images/ (--md adds report.md)
   fmjl chunks notes.fmjl             retriever-ready chunks as JSON Lines (--by section, --since old.fmjl)
   fmjl export notes.fmjl --to docx   also md, html, pdf, odt, epub (pdf needs pymupdf, docx/odt/epub pandoc)
@@ -32,7 +32,7 @@ As a library:
   fmjl.changed_chunks(new, old)             only the chunks to embed again after an edit
   fmjl.check("notes.fmjl")                  list of errors, empty when the file passes
 
-Needs Python 3.9+ and: pip install jsonschema
+Needs Python 3.10+ and: pip install jsonschema
 The rulebook (fmjl_rulebook_v1.1.md) is the authority. If this tool and the
 rulebook disagree, this tool has a bug.
 
@@ -76,7 +76,7 @@ ID_RE = re.compile(r"^[a-z0-9_-]+#e[1-9][0-9]*$")
 SHORT_ID_RE = re.compile(r"^e[1-9][0-9]*$")
 LABEL_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 LANG_RE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]+)*$")
-DATETIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$")
+DATETIME_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$")
 HEADING_RE = re.compile(r"^(#{1,6})(?:[ \t]|$)")
 FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 IMAGE_RE = re.compile(r"^!\[(.*)\]\((\S+?)\)$", re.S)
@@ -84,6 +84,8 @@ NOTE_RE = re.compile(r"^\s*<!--\s*(.*?)\s*-->\s*$", re.S)
 SEP_CELL_RE = re.compile(r"^:?-+:?$")
 LINK_RE = re.compile(r"\]\(#([a-z0-9_-]+)\)")
 TABLE_TAG_RE = re.compile(r"^<table(\s|>)", re.I)
+INT_RE = re.compile(r"[+-]?[0-9]+")
+FLOAT_RE = re.compile(r"([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?")
 
 SCHEMA = json.loads(r'''{
  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -607,7 +609,7 @@ def write_rows(path, rows):
 
 
 def write_text(path, text):
-    """Write UTF-8 text with \\n line endings on every platform (Python 3.9 compatible)."""
+    """Write UTF-8 text with \\n line endings on every platform."""
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
 
@@ -648,7 +650,7 @@ def _sep_cell(cell):
 def _span(value):
     """rowspan or colspan as a count, read like a browser: the leading whole number, and 1 when
     there is none or it is 0. Never raises, so a hand-written table cannot crash the checker."""
-    m = re.match(r"\s*([+-]?\d+)", value or "")
+    m = re.match(r"\s*([+-]?[0-9]+)", value or "")
     return (int(m.group(1)) or 1) if m else 1
 
 
@@ -987,7 +989,7 @@ def _detect(block):
         return "image"
     if s.startswith(">"):
         return "quote"
-    if re.match(r"^([-*+]|\d+[.)])\s", s):
+    if re.match(r"^([-*+]|[0-9]+[.)])\s", s):
         return "list"
     return "paragraph"
 
@@ -1092,7 +1094,7 @@ def _front_value(key, raw):
         return raw == "true"
     if raw == "null":
         return None
-    if key in ("last_id", "elements") and re.match(r"^-?\d+$", raw):
+    if key in ("last_id", "elements") and re.match(r"^-?[0-9]+$", raw):
         return int(raw)
     return raw
 
@@ -1102,20 +1104,17 @@ def _ref(value, doc):
 
 
 def _int(val, key):
-    s = str(val).strip()
-    if not re.match(r"^[+-]?\d+$", s):
+    if not INT_RE.fullmatch(val):
         raise ValueError(f"{key}={val} is not a whole number")
-    return int(s)
+    return int(val)
 
 
 def _float(val, key):
-    try:
-        n = float(val)
-    except ValueError:
-        n = float("nan")
-    if n != n or n in (float("inf"), float("-inf")):
-        raise ValueError(f"{key}={val} is not a number")
-    return n
+    """A plain decimal number from 0 to 1 (rulebook 9.3), such as 0.9, .5 or 1e-2. The JavaScript
+    converter accepts exactly the same values."""
+    if FLOAT_RE.fullmatch(val) and float(val) <= 1:
+        return float(val)
+    raise ValueError(f"{key}={val} is not a number from 0 to 1")
 
 
 def _apply_note(row, attrs, doc):
@@ -1301,7 +1300,7 @@ def _place(row, tracker, els):
 def _needs_quotes(v):
     return (v == "" or v != v.strip() or "\n" in v or ": " in v or ", " in v or v.endswith(":")
             or v[0] in "\"'[{#&*!|>%@`" or v in ("true", "false", "null")
-            or re.match(r"^-?\d+(\.\d+)?$", v) is not None)
+            or re.match(r"^-?[0-9]+(\.[0-9]+)?$", v) is not None)
 
 
 def _front_text(key, v):
@@ -1908,7 +1907,7 @@ def main(argv=None):
             import importlib
             importer = importlib.import_module("fmjl." + a.cmd)
         except ImportError as e:
-            need = 'pip install pymupdf (or: pip install "fmjl[pdf]")' if a.cmd == "pdf" else "the fmjl package"
+            need = 'pip install "fmjl[pdf]"' if a.cmd == "pdf" else "the fmjl package"
             print(f"error: the {a.cmd} importer needs {need} ({e})")
             return 2
         args = [str(path)] + (["-o", a.output] if a.output else []) + (["--doc", a.doc] if a.doc else []) + (["--md"] if a.md else [])

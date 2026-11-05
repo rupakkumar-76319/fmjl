@@ -2,6 +2,9 @@
 ## 1.1.1
 - A `$$` line with text after the closing `$$`, or a `$$` block that is never closed, is a paragraph; it no longer swallows the rest of the document into one formula. Same for a paragraph starting with a word like `<tablet`, which is no longer read as a table. Both end at a blank line, as in Markdown.
 - Converting a `.md` with a bad note value (`page=abc`) reports the line: `line 5: page=abc is not a whole number`.
+- `confidence=` accepts only a plain decimal number from 0 to 1, the same values as the Python package. `0x10` and an empty value are errors now, not 16 and 0, and `confidence=1e22` can no longer write a line that is not valid JSON.
+- Small numbers are written as Python writes them (`1e-07`).
+- Control characters and rare Unicode spaces (form separators, next line, byte-order mark) count as space exactly as they do in the Python package, and the line and paragraph separators no longer stop a heading from being tidied. The live checker follows the same rule for empty lines.
 - Matches the Python package 1.1.3 byte for byte.
 ## 1.1.0
 - Matches rulebook version 1.1. The converter writes `"version":"1.1"`; files written as 1.0 stay valid.

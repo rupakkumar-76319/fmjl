@@ -3,7 +3,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { canonicalMd } = require("./converter.js");
+const { canonicalMd, strip } = require("./converter.js");
 
 const TYPES = ["heading", "paragraph", "list", "table", "formula", "code", "image", "caption",
   "footnote", "form_field", "annotation", "redaction", "noise", "message", "utterance",
@@ -54,7 +54,7 @@ function validate(text, base, opts) {
   rawLines.forEach((raw, i) => {
     const last = i === rawLines.length - 1;
     if (raw === "" && last) return;
-    if (raw.trim() === "") { add(i, "empty line (not allowed; delete it)"); return; }
+    if (strip(raw) === "") { add(i, "empty line (not allowed; delete it)"); return; }
     try {
       const obj = JSON.parse(raw);
       if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {

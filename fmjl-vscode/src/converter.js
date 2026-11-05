@@ -24,10 +24,23 @@ const ID_RE = /^[a-z0-9_-]+#e[1-9][0-9]*$/;
 const SHORT_ID_RE = /^e[1-9][0-9]*$/;
 const HEADING_RE = /^(#{1,6})(?:[ \t]|$)/;
 const FENCE_RE = /^ {0,3}(`{3,}|~{3,})/;
-const IMAGE_RE = /^!\[([\s\S]*)\]\((\S+?)\)$/;
-const NOTE_RE = /^\s*<!--\s*([\s\S]*?)\s*-->\s*$/;
+const WS = String.raw`\t-\r\x1c-\x20\x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000`;
+const SP = `[${WS}]`;
+const IMAGE_RE = new RegExp(String.raw`^!\[([\s\S]*)\]\(([^${WS}]+?)\)$`);
+const NOTE_RE = new RegExp(String.raw`^${SP}*<!--${SP}*([\s\S]*?)${SP}*-->${SP}*$`);
 const SEP_CELL_RE = /^:?-+:?$/;
-const TABLE_TAG_RE = /^<table(\s|>)/i;
+const TABLE_TAG_RE = new RegExp(`^<table(${SP}|>)`, "i");
+const LSTRIP_RE = new RegExp(`^${SP}+`);
+const RSTRIP_RE = new RegExp(`${SP}+$`);
+const SPACES_RE = new RegExp(`${SP}+`, "g");
+const ATTR_RE_SOURCE = String.raw`([^${WS}=\/>]+)(?:${SP}*=${SP}*(?:"([^"]*)"|'([^']*)'|([^${WS}"'>]+)))?`;
+const HEADING_TEXT_RE = new RegExp(String.raw`^(#{1,6})${SP}*([^\n]*)$`);
+const HEADING_CLOSE_RE = new RegExp(`(?:^|${SP})#+$`);
+const BULLET_RE = new RegExp(`^(${SP}*)[*+](${SP})`);
+const META_RE = new RegExp(`(^|${SP})meta=`);
+const LIST_RE = new RegExp(String.raw`^([-*+]|\d+[.)])${SP}`);
+const INT_RE = /^[+-]?[0-9]+$/;
+const FLOAT_RE = /^([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$/;
 const QUOTE_STARTS = "\"'[{#&*!|>%@`";
 
 const FLOAT = Symbol("float");
@@ -35,14 +48,21 @@ const FLOAT = Symbol("float");
 function isStr(v) { return typeof v === "string"; }
 function isInt(v) { return Number.isInteger(v); }
 function isObj(v) { return v !== null && typeof v === "object" && !Array.isArray(v); }
-function lstrip(s) { return s.replace(/^\s+/, ""); }
-function rstrip(s) { return s.replace(/\s+$/, ""); }
+function lstrip(s) { return s.replace(LSTRIP_RE, ""); }
+function rstrip(s) { return s.replace(RSTRIP_RE, ""); }
+function strip(s) { return lstrip(rstrip(s)); }
 function stripNl(s) { return s.replace(/^\n+/, "").replace(/\n+$/, ""); }
 function chars(s) { return [...s].length; }
 
+function pyFloat(v) {
+  const [digits, e] = v.toExponential().split("e");
+  const exp = Number(e);
+  if (exp < -4 || exp >= 16) return digits + "e" + (exp < 0 ? "-" : "+") + String(Math.abs(exp)).padStart(2, "0");
+  return Number.isInteger(v) ? v + ".0" : String(v);
+}
+
 function pyNum(v, asFloat) {
-  if (Number.isInteger(v)) return asFloat ? v + ".0" : String(v);
-  return String(v);
+  return Number.isInteger(v) && !asFloat ? String(v) : pyFloat(v);
 }
 
 function pyJson(v, compact, floats) {
@@ -88,7 +108,7 @@ function readRows(text) {
   const lines = text.split("\n");
   lines.forEach((line, idx) => {
     line = line.replace(/\r$/, "");
-    if (!line.trim()) return;
+    if (!strip(line)) return;
     let obj;
     try {
       obj = JSON.parse(line);
@@ -107,7 +127,7 @@ function writeRows(rows) {
 }
 
 function splitRow(line) {
-  let s = line.trim();
+  let s = strip(line);
   if (s.startsWith("|")) s = s.slice(1);
   if (s.endsWith("|") && !s.endsWith("\\|")) s = s.slice(0, -1);
   const cells = [];
@@ -121,14 +141,14 @@ function splitRow(line) {
       continue;
     }
     if (c === "|") {
-      cells.push(cur.trim());
+      cells.push(strip(cur));
       cur = "";
     } else {
       cur += c;
     }
     i += 1;
   }
-  cells.push(cur.trim());
+  cells.push(strip(cur));
   return cells;
 }
 
@@ -155,7 +175,7 @@ function unescapeHtml(s) {
 
 function parseAttrs(s) {
   const out = {};
-  const re = /([^\s=\/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  const re = new RegExp(ATTR_RE_SOURCE, "g");
   let m;
   while ((m = re.exec(s)) !== null) {
     let val = null;
@@ -190,7 +210,7 @@ function tableRows(html) {
           cell.push(" ");
         }
       } else if ((tag === "td" || tag === "th") && cell !== null) {
-        const text = cell.join("").replace(/\s+/g, " ").trim().replace(/\|/g, "\\|");
+        const text = strip(cell.join("").replace(SPACES_RE, " ")).replace(/\|/g, "\\|");
         row.push([text, span]);
         cell = null;
       } else if (tag === "tr" && row !== null) {
@@ -307,18 +327,18 @@ function canonicalMd(type, md, latex, html) {
   if (type === "formula" && isStr(latex)) return "$$" + latex + "$$";
   if (type === "table" && html) return htmlTableToMd(html);
   const text = md.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  let out = text.split("\n").map((ln) => (ln.trim() && ln.endsWith("  ")) ? rstrip(ln) + "\\" : rstrip(ln));
+  let out = text.split("\n").map((ln) => (strip(ln) && ln.endsWith("  ")) ? rstrip(ln) + "\\" : rstrip(ln));
   while (out.length && !out[0]) out.shift();
   while (out.length && !out[out.length - 1]) out.pop();
   if (type === "heading" && out.length) {
-    const m = /^(#{1,6})\s*(.*)$/.exec(out[0]);
+    const m = HEADING_TEXT_RE.exec(out[0]);
     if (m) {
-      const t = m[2].replace(/(?:^|\s)#+$/, "").trim();
+      const t = strip(m[2].replace(HEADING_CLOSE_RE, ""));
       out[0] = m[1] + (t ? " " + t : "");
     }
   }
   if (type === "list" || type === "form_field") {
-    out = out.map((ln) => ln.replace(/^(\s*)[*+](\s)/, "$1-$2"));
+    out = out.map((ln) => ln.replace(BULLET_RE, "$1-$2"));
   }
   if (type === "table" && out.length && out.every((ln) => lstrip(ln).startsWith("|"))) {
     const rows = out.map(splitRow);
@@ -391,7 +411,7 @@ function fill(rowsIn, doc, base) {
     if (t === "heading") {
       const m = HEADING_RE.exec(md);
       if (!isInt(e.level)) e.level = m ? m[1].length : 1;
-      if (!m) md = "#".repeat(e.level) + " " + md.trim();
+      if (!m) md = "#".repeat(e.level) + " " + strip(md);
     }
     if (t === "formula" && !isStr(e.latex)) e.latex = stripDollars(md);
     e.md = canonicalMd(t, md, e.latex, e.html);
@@ -429,23 +449,23 @@ function fill(rowsIn, doc, base) {
 }
 
 function stripDollars(md) {
-  let s = md.trim();
+  let s = strip(md);
   if (s.startsWith("$$")) s = s.slice(2);
   if (s.endsWith("$$")) s = s.slice(0, -2);
-  return s.trim().includes("\n") ? stripNl(s) : s.trim();
+  return strip(s).includes("\n") ? stripNl(s) : strip(s);
 }
 
 function parseNote(line) {
   const m = NOTE_RE.exec(line);
-  if (!m || line.trim().includes("\n")) return null;
+  if (!m || strip(line).includes("\n")) return null;
   let body = m[1];
   if (body.startsWith("/")) {
-    const name = body.slice(1).trim();
+    const name = strip(body.slice(1));
     if (!name || name.includes(" ")) return null;
     return name === "group" ? ["endgroup", {}] : ["end", { name: name }];
   }
   let meta = null;
-  const k = /(^|\s)meta=/.exec(body);
+  const k = META_RE.exec(body);
   if (k) {
     try {
       meta = JSON.parse(body.slice(k.index + k[0].length));
@@ -455,7 +475,7 @@ function parseNote(line) {
     if (!isObj(meta)) return null;
     body = body.slice(0, k.index);
   }
-  let toks = body.trim() ? body.trim().split(/\s+/) : [];
+  let toks = strip(body) ? strip(body).split(SPACES_RE) : [];
   let kind = "note";
   const attrs = {};
   if (toks.length && toks[0] === "group") {
@@ -484,10 +504,10 @@ function detect(block) {
   if (HEADING_RE.test(s)) return "heading";
   if (FENCE_RE.test(block)) return "code";
   if (s.startsWith("|") || TABLE_TAG_RE.test(s)) return "table";
-  if (s.startsWith("$$") && rstrip(s).endsWith("$$") && s.trim().length >= 4) return "formula";
-  if (!block.trim().includes("\n") && IMAGE_RE.test(block.trim())) return "image";
+  if (s.startsWith("$$") && rstrip(s).endsWith("$$") && strip(s).length >= 4) return "formula";
+  if (!strip(block).includes("\n") && IMAGE_RE.test(strip(block))) return "image";
   if (s.startsWith(">")) return "quote";
-  if (/^([-*+]|\d+[.)])\s/.test(s)) return "list";
+  if (LIST_RE.test(s)) return "list";
   return "paragraph";
 }
 
@@ -501,7 +521,7 @@ function readBlock(lines, i) {
     while (j < lines.length) {
       const mm = FENCE_RE.exec(lines[j]);
       if (mm && mm[1][0] === fence[0] && mm[1].length >= fence.length &&
-          !lines[j].trim().slice(mm[1].length).trim()) {
+          !strip(strip(lines[j]).slice(mm[1].length))) {
         return [lines.slice(i, j + 1).join("\n"), j + 1];
       }
       j += 1;
@@ -510,22 +530,22 @@ function readBlock(lines, i) {
   }
   if (TABLE_TAG_RE.test(s)) {
     let j = i;
-    while (j < lines.length && lines[j].trim() && !lines[j].toLowerCase().includes("</table>")) j += 1;
-    if (j < lines.length && lines[j].trim()) return [lines.slice(i, j + 1).join("\n"), j + 1];
+    while (j < lines.length && strip(lines[j]) && !lines[j].toLowerCase().includes("</table>")) j += 1;
+    if (j < lines.length && strip(lines[j])) return [lines.slice(i, j + 1).join("\n"), j + 1];
     return [lines.slice(i, j).join("\n"), j];
   }
   if (s.startsWith("$$")) {
-    if (s.trim().length >= 4 && s.trim().endsWith("$$")) return [ln, i + 1];
+    if (strip(s).length >= 4 && strip(s).endsWith("$$")) return [ln, i + 1];
     let j = i + 1;
-    while (j < lines.length && lines[j].trim() && !parseNote(lines[j]) && !rstrip(lines[j]).endsWith("$$")) j += 1;
-    if (j < lines.length && lines[j].trim() && rstrip(lines[j]).endsWith("$$")) return [lines.slice(i, j + 1).join("\n"), j + 1];
+    while (j < lines.length && strip(lines[j]) && !parseNote(lines[j]) && !rstrip(lines[j]).endsWith("$$")) j += 1;
+    if (j < lines.length && strip(lines[j]) && rstrip(lines[j]).endsWith("$$")) return [lines.slice(i, j + 1).join("\n"), j + 1];
     return [lines.slice(i, j).join("\n"), j];
   }
   if (HEADING_RE.test(s)) return [ln, i + 1];
   let j = i + 1;
   while (j < lines.length) {
     const nxt = lines[j];
-    if (!nxt.trim() || parseNote(nxt) || FENCE_RE.test(nxt) || HEADING_RE.test(lstrip(nxt))) break;
+    if (!strip(nxt) || parseNote(nxt) || FENCE_RE.test(nxt) || HEADING_RE.test(lstrip(nxt))) break;
     j += 1;
   }
   return [lines.slice(i, j).join("\n"), j];
@@ -564,11 +584,11 @@ function splitFront(text) {
   const body = text.slice(end + 5);
   const fields = {};
   for (const ln of front.split("\n")) {
-    if (!ln.trim() || lstrip(ln).startsWith("#")) continue;
+    if (!strip(ln) || lstrip(ln).startsWith("#")) continue;
     const c = ln.indexOf(":");
     if (c < 0) throw new Error("front matter line '" + ln + "' needs the form key: value");
-    const key = ln.slice(0, c).trim();
-    fields[key] = frontValue(key, ln.slice(c + 1).trim());
+    const key = strip(ln.slice(0, c));
+    fields[key] = frontValue(key, strip(ln.slice(c + 1)));
   }
   return [fields, body];
 }
@@ -582,7 +602,7 @@ function frontValue(key, raw) {
       return raw;
     }
   }
-  if (key === "authors") return raw.split(",").map((a) => a.trim()).filter(Boolean);
+  if (key === "authors") return raw.split(",").map((a) => strip(a)).filter(Boolean);
   if (raw === "true" || raw === "false") return raw === "true";
   if (raw === "null") return null;
   if ((key === "last_id" || key === "elements") && /^-?\d+$/.test(raw)) return Number(raw);
@@ -594,9 +614,13 @@ function ref(value, doc) {
 }
 
 function toInt(v, key) {
-  const s = String(v).trim();
-  if (!/^[+-]?\d+$/.test(s)) throw new Error(key + "=" + v + " is not a whole number");
-  return Number(s);
+  if (!INT_RE.test(v)) throw new Error(key + "=" + v + " is not a whole number");
+  return Number(v);
+}
+
+function toFloat(v, key) {
+  if (FLOAT_RE.test(v) && Number(v) <= 1) return Number(v);
+  throw new Error(key + "=" + v + " is not a number from 0 to 1");
 }
 
 function applyNote(row, attrs, doc) {
@@ -608,9 +632,7 @@ function applyNote(row, attrs, doc) {
     } else if (key === "pages" || key === "bbox") {
       row[key] = val.split(",").filter((v) => v !== "").map((v) => toInt(v, key));
     } else if (key === "confidence") {
-      const n = Number(val);
-      if (!Number.isFinite(n)) throw new Error("confidence=" + val + " is not a number");
-      row.confidence = n;
+      row.confidence = toFloat(val, key);
       row[FLOAT] = true;
     } else if (key === "access") {
       row.access = val.split(",").filter(Boolean);
@@ -635,9 +657,9 @@ function makeElement(block, attrs, doc) {
   if (t === "heading") {
     const m = HEADING_RE.exec(lstrip(block));
     row.level = m ? m[1].length : 1;
-    md = block.trim();
+    md = strip(block);
   } else if (t === "image" && detected === "image") {
-    const m = IMAGE_RE.exec(block.trim());
+    const m = IMAGE_RE.exec(strip(block));
     row.file = m[2];
     md = m[1];
   } else if (t === "formula" && detected === "formula") {
@@ -645,10 +667,10 @@ function makeElement(block, attrs, doc) {
     row.latex = latex;
     md = "$$" + latex + "$$";
   } else if (t === "table" && TABLE_TAG_RE.test(lstrip(block))) {
-    row.html = block.trim();
+    row.html = strip(block);
     md = htmlTableToMd(row.html);
   } else if (t === "table" && detected === "table") {
-    const cells = block.trim().split("\n").map(splitRow);
+    const cells = strip(block).split("\n").map(splitRow);
     let html = null;
     if (cells.length > 1 && cells[1].every((c) => SEP_CELL_RE.test(c))) html = shortcutToHtml([cells[0]].concat(cells.slice(2)));
     if (html) {
@@ -703,7 +725,7 @@ function importMd(text, opts) {
   let i = 0;
   while (i < lines.length) {
     const ln = lines[i];
-    if (!ln.trim()) {
+    if (!strip(ln)) {
       i += 1;
       continue;
     }
@@ -746,7 +768,7 @@ function importMd(text, opts) {
       const attrs = Object.assign({}, pendingGroup, { type: "group" });
       pendingGroup = null;
       const row = element(block, attrs, groupLine);
-      row.md = block.trim();
+      row.md = strip(block);
       for (const k of ["file", "latex", "html", "level"]) delete row[k];
       place(row, tracker, els);
       tracker.openGroup(row);
@@ -798,7 +820,7 @@ function importMd(text, opts) {
 }
 
 function needsQuotes(v) {
-  return v === "" || v !== v.trim() || v.includes("\n") || v.includes(": ") || v.includes(", ") ||
+  return v === "" || v !== strip(v) || v.includes("\n") || v.includes(": ") || v.includes(", ") ||
     v.endsWith(":") || QUOTE_STARTS.includes(v[0]) || ["true", "false", "null"].includes(v) ||
     /^-?\d+(\.\d+)?$/.test(v);
 }
@@ -914,5 +936,5 @@ function docName(stem) {
 module.exports = {
   VERSION, CONVERTER, TYPES,
   elementHash, dumps, readRows, writeRows, canonicalMd, htmlTableToMd, shortcutToHtml, htmlToShortcut,
-  fill, importMd, exportMd, docName,
+  fill, importMd, exportMd, docName, strip,
 };

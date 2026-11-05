@@ -7,7 +7,7 @@
 Formats:
   md      clean Markdown without id notes; merged-cell tables as HTML
   html    one page with the images inside it; formulas as LaTeX, shown with MathJax when online
-  pdf     that page printed with PyMuPDF (pip install pymupdf)
+  pdf     that page printed with PyMuPDF (pip install "pymupdf<2")
   docx    Word, made from that page by pandoc (https://pandoc.org); formulas become Word equations
   odt     OpenDocument text, by pandoc
   epub    e-book, by pandoc

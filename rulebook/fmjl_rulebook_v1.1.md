@@ -10,7 +10,7 @@ source: fmjl_rulebook_v1.1.md
 protection: none
 signed: false
 converter: fmjl 0.5
-last_id: 125
+last_id: 127
 ---
 
 # FMJL Rulebook, Version 1.1
@@ -277,6 +277,8 @@ The tool recognizes the type of each block by itself:
 
 A table needs its separator row, `| --- | --- |`, and each row starts and ends with `|`. Lines that hold `|` but no separator row are read as a paragraph, and the tool warns. Joined cells must form a rectangle. To put a literal `^` or `<` alone in a cell, write `\^` or `\<`. When the tool writes the authoring form, a table whose `html` is in canonical form is shown with `^` and `<` again; other HTML is shown as written.
 
+A blank line ends a `$$` block and an HTML table block, as in Markdown. A `$$` block that is never closed, or a `$$` line with text after the closing `$$`, is a paragraph. A block is an HTML table only when it starts with the tag `<table>` or `<table ` with attributes, so a word like `<tablet` is a paragraph.
+
 ### 9.3 Notes
 
 A note is an HTML comment on its own line, directly before a block. Markdown viewers hide notes, so the document stays clean to read. A note adds fields to the block after it:
@@ -293,6 +295,8 @@ A note can hold:
 3. `subtype=`, `label=`, `page=`, `lang=`, `confidence=`, `parent=`, and `continues=`.
 4. Lists separated by commas: `pages=`, `bbox=`, `access=`, and `reference=`.
 5. `meta=` followed by JSON, always at the end of the note.
+
+`page=`, `pages=`, `bbox=`, and `level=` hold whole numbers. `confidence=` holds a plain decimal number from 0 to 1, such as `0.9`, `.5`, or `1e-2`. Any other value stops the conversion with an error that names the line of the note.
 
 References, `parent=`, and `continues=` can use an ID (`e7`), a label (`inputs`), or the words `above` and `below` for the block just before or just after this one; so a label cannot be named `above` or `below`. HTML comments that do not start like a note stay in the document as normal content.
 
@@ -979,7 +983,7 @@ It needs Python and one package, `pip install jsonschema`; the PDF importer also
 4. Version 0.4: the format is named FMJL, short for Format, Markdown, JSON Lines; the placeholder name "Format X" is retired; the license is MIT. No rules changed, so 0.3 files stay valid.
 5. Version 0.5: merged cells can be written in a Markdown table with `^` and `<`, and tool-written HTML has one canonical form (sections 8 and 9.2); `above` and `below` in notes (9.3); the group title explained (9.4); the `md` form of footnotes (7.5); `fmjl.` names reserved in `meta` (7.6); importer rules (10.1); chunks defined (12.1); the tool warns about a table typed without its separator row; the `pdf`, `docx`, and `chunks` commands. No 0.4 file becomes invalid, so `fmjl upgrade` only changes the version.
 6. Version 1.0: the first stable version. No rules changed since 0.5. The `fmjl` package is on PyPI, the extension on the Marketplace, `fmjl.exe` on the GitHub release, and this rulebook on the website. From 1.0 on, every 1.x reader reads every 1.x file (section 13).
-7. Version 1.1: importer rules for books and scans, written after converting a 345-page scanned novel and checking five more books (10.1, rules 11 to 20): running headers with changing page numbers are noise, a paragraph split into blocks by the text layer is one element, page-break continuations are found from the layout, chapter lines become headings, missing spaces in OCR text layers are restored, real hyphens are kept, drop caps rejoin their paragraph, sidebars are read as their own stream, and Word text boxes, hidden text, symbols and list levels are handled. `fmjl.body` marks where the front matter ends (7.6). Parts linked with `continues` form one chunk, and front matter is not chunked by default (12.1). The `pdf` and `docx` commands write only the storage form; `--md` adds the authoring form. The `export` command and `fmjl --version` are new. No 1.0 file becomes invalid, so `fmjl upgrade` only changes the version.
+7. Version 1.1: importer rules for books and scans, written after converting a 345-page scanned novel and checking five more books (10.1, rules 11 to 20): running headers with changing page numbers are noise, a paragraph split into blocks by the text layer is one element, page-break continuations are found from the layout, chapter lines become headings, missing spaces in OCR text layers are restored, real hyphens are kept, drop caps rejoin their paragraph, sidebars are read as their own stream, and Word text boxes, hidden text, symbols and list levels are handled. `fmjl.body` marks where the front matter ends (7.6). Parts linked with `continues` form one chunk, and front matter is not chunked by default (12.1). The `pdf` and `docx` commands write only the storage form; `--md` adds the authoring form. The `export` command and `fmjl --version` are new. No 1.0 file becomes invalid, so `fmjl upgrade` only changes the version. Package 1.1.3 writes down reading rules the tools follow, with no change to the file format: when a blank line ends a block (9.2) and which note values are accepted (9.3).
 
 Moving from 0.2 to 0.3: run `fmjl upgrade`. Some `md` texts change once into canonical form, so their hashes change and those elements are embedded again once.
 

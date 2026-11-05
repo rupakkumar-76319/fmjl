@@ -18,7 +18,7 @@ Every element gets page (from 0) and bbox (0..1000). Paragraphs that run over
 a page break are linked with continues=. Pages without a text layer need OCR;
 that works when Tesseract is installed, otherwise the page is reported.
 
-Needs: pip install pymupdf
+Needs: pip install "pymupdf<2"
 Copyright (c) 2026 Rupak Kumar. MIT License, see LICENSE.
 """
 from __future__ import annotations
@@ -924,7 +924,15 @@ def _merge_lists(page_els):
     return out
 
 
+def _check_pymupdf(version):
+    """PyMuPDF 2 changes the text and the tables it reads from a page, without any error, so the
+    importer refuses it instead of writing damaged documents (project/NOTES.md, note 6)."""
+    if int(version.split(".")[0]) >= 2:
+        raise RuntimeError(f'the PDF importer needs PyMuPDF below 2, found {version} (pip install "pymupdf<2")')
+
+
 def import_pdf(path, doc=None, out_dir=None, ocr=None):
+    _check_pymupdf(pymupdf.__version__)
     path = Path(path)
     out_dir = Path(out_dir) if out_dir else path.parent
     doc = doc or re.sub(r"[^a-z0-9_-]+", "_", path.stem.lower()).strip("_") or "document"

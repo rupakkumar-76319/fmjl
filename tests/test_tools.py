@@ -217,11 +217,38 @@ class Converter(Temp):
         with self.assertRaisesRegex(ValueError, r"^line 1: bbox=x is not a whole number"):
             fmjl.import_md("<!-- bbox=1,2,x,4 -->\nHello", doc="t")
 
+    def test_confidence_is_a_plain_decimal_number(self):
+        for good, value in (("0.9", 0.9), (".5", 0.5), ("1e-2", 0.01), ("1", 1.0), ("0", 0.0), ("1e-7", 1e-7)):
+            self.assertEqual(fmjl.import_md(f"<!-- confidence={good} -->\nHello", doc="t")[1]["confidence"], value)
+        for bad in ("0x10", "1_0", "", "nan", "inf", "1e999", "abc", "5", "-1", "+0.5", "-0", "1e22", "٣"):
+            with self.assertRaisesRegex(ValueError, r"is not a number from 0 to 1"):
+                fmjl.import_md(f"<!-- confidence={bad} -->\nHello", doc="t")
+
     def test_section_chunk_keeps_its_heading_with_the_first_part(self):
         rows = fmjl.import_md("# D\n\n" + "word " * 40 + "\n\n" + "more " * 40, doc="t")
         out = fmjl.chunks(rows, by="section", max_chars=50)
         self.assertEqual([c["id"] for c in out], ["t#e1/1", "t#e1/2"])
         self.assertEqual(out[0]["elements"], ["t#e1", "t#e2"])
+
+
+class ListNumbers(unittest.TestCase):
+    def test_only_ascii_digits_start_a_numbered_list(self):
+        self.assertEqual(fmjl.import_md("4. item", doc="t")[1]["type"], "list")
+        self.assertEqual(fmjl.import_md("\u096a. item", doc="t")[1]["type"], "paragraph")
+        self.assertEqual(fmjl.import_md("\u0663) item", doc="t")[1]["type"], "paragraph")
+
+
+class PdfVersion(unittest.TestCase):
+    """PyMuPDF 2 damages table text without an error, so the importer must refuse it."""
+
+    def test_pymupdf_2_is_refused(self):
+        try:
+            from fmjl import pdf
+        except ImportError:
+            self.skipTest("pymupdf is not installed")
+        pdf._check_pymupdf("1.28.2")
+        with self.assertRaisesRegex(RuntimeError, r"below 2, found 2\.1"):
+            pdf._check_pymupdf("2.1")
 
 
 class Version(unittest.TestCase):

@@ -9,6 +9,7 @@ Findings that the rulebook did not cover. Each one is resolved in the next ruleb
 3. The PDF importer's OCR path is untested because Tesseract is not installed here (was note 12).
 4. Printed page numbers: a book prints its own numbers ("PERSUASION. 101") that differ from `page`. The running header keeps the printed number as a `noise` element, but nothing maps a page to its printed number yet.
 5. A decorated first letter (drop cap) is a picture in scans, so the first word of a chapter loses its first letter ("IR WALTER" for "SIR WALTER").
+6. PyMuPDF 2.x is not supported yet, so the package asks for `pymupdf<2` and the importer refuses 2.x. In 2.1 `Table.extract()` damages text (`2,480` becomes `2480 ,`, `Bill reduction` becomes `Billreduction`) and `find_tables()` finds tables on pages of real books where 1.28 finds none. `Page.get_textbox()` on each cell is not a way out: it pulls in text from beside the cell. Supporting 2.x needs its own cell reading and table filter, checked against real books.
 
 ## Resolved in rulebook 1.1 (2026-10-04)
 

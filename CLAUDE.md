@@ -34,7 +34,7 @@ README.md        an FMJL document itself; README.fmjl is regenerated from it wit
 ```powershell
 fmjl notes.md                     # or: python -m fmjl new notes.md
 fmjl notes.fmjl                   # back to Markdown, ids kept
-fmjl report.pdf                   # PDF importer (pip install pymupdf)
+fmjl report.pdf                   # PDF importer (pip install "pymupdf<2")
 fmjl report.docx                  # Word importer
 fmjl chunks notes.fmjl --by section
 python benchmark\benchmark.py

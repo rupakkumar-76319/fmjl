@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: ["3.9", "3.13"]
+        python: ["3.10", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install jsonschema pymupdf markdown-it-py python-docx
+      - run: pip install jsonschema "pymupdf<2" markdown-it-py python-docx
       - name: Check every document in the repository
         run: |
           for f in examples/*.fmjl rulebook/*.fmjl README.fmjl; do
@@ -58,13 +58,13 @@ jobs:
   extension:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
       - run: pip install jsonschema
       - name: Converter matches the Python package byte for byte
         working-directory: fmjl-vscode
