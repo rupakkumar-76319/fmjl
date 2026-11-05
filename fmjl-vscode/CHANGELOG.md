@@ -1,4 +1,6 @@
 # Changelog
+## 1.1.3
+- The version number now matches the Python package 1.1.3. Nothing else changed since 1.1.1.
 ## 1.1.1
 - A `$$` line with text after the closing `$$`, or a `$$` block that is never closed, is a paragraph; it no longer swallows the rest of the document into one formula. Same for a paragraph starting with a word like `<tablet`, which is no longer read as a table. Both end at a blank line, as in Markdown.
 - Converting a `.md` with a bad note value (`page=abc`) reports the line: `line 5: page=abc is not a whole number`.

@@ -235,12 +235,13 @@ pyinstaller --onefile --clean --name fmjl --paths . --hidden-import fmjl.pdf --h
 - [x] `fmjl export` never replaces an existing file (often the original) without `--force`
 - [x] `dist/fmjl.exe` rebuilt as 1.1.3; extension packaged as `fmjl-1.1.1.vsix`, `fmjl-1.1.0.vsix` moved to `archive/`
 - [x] Published 2026-11-05: PyPI 1.1.3 (clean install tested) and extension 1.1.1 on the Marketplace; CI green on Python 3.10, 3.13 and the extension
+- [x] Extension 1.1.3: same number as the package, moved `fmjl-1.1.1.vsix` to `archive/`
 - [ ] GitHub release `v1.1.3` with `fmjl.exe`, the `.vsix` and both rulebook files
 - [x] Review of 2026-10-31: a `$$` line or block without its closing `$$`, and a paragraph starting with `<tablet`, no longer swallow the rest of the document; `fmjl check` reports a table with `rowspan="x"` instead of crashing; note errors carry their line (`line 5: page=abc is not a whole number`); a section chunk never leaves its heading alone when `--max-chars` splits it; Word footnotes point at their paragraph even when it has three or more, and are kept in image-only paragraphs; the PDF importer and the quality check close their files; `export` names the missing package; the benchmark writes LF on Windows, copies `images/solar_panels.png` next to its sample, and keeps the last token counts without a tokenizer; `rag_demo.py` skips a second file with the same document name. Package `1.1.3`, extension `1.1.1`; tests in `tests/test_tools.py` (`Converter`)
 - [x] Review of 2026-11-05: PyMuPDF held below 2 and the importer refuses 2.x (NOTES.md, note 6), which fixes the CI failure; `confidence=` is a plain decimal number from 0 to 1 in both converters, JavaScript writes small numbers as Python does and can no longer write invalid JSON; blank-line and note-value rules written into the rulebook (9.2, 9.3); licence metadata for current setuptools; CI on Python 3.10 and 3.13, Node 22, current actions; `requires-python` is now 3.10
 - [x] Python and JavaScript agree on unusual characters: the JavaScript converter uses Python's set of space characters, only ASCII digits start a numbered list in both, `npm test` covers 123 such inputs; 40,000 random documents compared with no difference. Install messages say `pymupdf<2`
 - [ ] PyPI 1.1.3: `python -m build` then `python -m twine upload dist/fmjl-1.1.3*`
-- [ ] Extension 1.1.1 (converter fix): `cd fmjl-vscode` then `npx @vscode/vsce package` and `npx @vscode/vsce publish`
+- [x] Extension 1.1.1 (converter fix): `cd fmjl-vscode` then `npx @vscode/vsce package` and `npx @vscode/vsce publish`
 
 ---
 
